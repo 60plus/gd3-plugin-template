@@ -1,0 +1,12 @@
+{
+  "id": "my-theme",
+  "name": "My Custom Theme",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "A custom theme for GamesDownloader",
+  "type": "theme",
+  "entry": "plugin.py",
+  "requires": [],
+  "min_gd_version": "3.0.0",
+  "config_schema": {}
+}

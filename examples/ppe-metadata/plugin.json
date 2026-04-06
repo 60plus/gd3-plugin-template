@@ -1,0 +1,29 @@
+{
+  "id": "ppe-metadata",
+  "name": "PPE.pl Metadata Scraper",
+  "version": "1.0.0",
+  "author": "60plus",
+  "description": "Scrapes game metadata, descriptions, ratings, and screenshots from PPE.pl (Polish gaming website). Uses DuckDuckGo/Bing search to find game pages, then parses them for Polish descriptions, release dates, genres, ratings, developer info, and screenshot galleries.",
+  "type": "metadata",
+  "entry": "plugin.py",
+  "requires": ["beautifulsoup4", "httpx"],
+  "min_gd_version": "3.0.0",
+  "config_schema": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "label": "Enable PPE.pl scraper"
+    },
+    "search_engine": {
+      "type": "select",
+      "options": ["bing", "duckduckgo"],
+      "default": "bing",
+      "label": "Primary search engine"
+    },
+    "min_match_score": {
+      "type": "number",
+      "default": 0.65,
+      "label": "Minimum title match score (0-1)"
+    }
+  }
+}

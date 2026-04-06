@@ -1,0 +1,18 @@
+{
+  "id": "my-metadata-scraper",
+  "name": "My Metadata Scraper",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "Fetches game metadata from example.com",
+  "type": "metadata",
+  "entry": "plugin.py",
+  "requires": ["httpx", "beautifulsoup4"],
+  "min_gd_version": "3.0.0",
+  "config_schema": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "label": "Enable scraper"
+    }
+  }
+}

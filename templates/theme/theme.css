@@ -1,0 +1,10 @@
+/* Custom theme CSS - injected into <head> by the plugin system.
+   Use CSS custom properties to override GamesDownloader's defaults.
+   See the main app's styles/base.css for available variables. */
+
+:root {
+  /* Example overrides: */
+  /* --glass-bg: rgba(20, 10, 40, 0.85); */
+  /* --glass-border: rgba(255, 255, 255, 0.08); */
+  /* --radius: 16px; */
+}

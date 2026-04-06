@@ -1,0 +1,12 @@
+{
+  "id": "my-widget",
+  "name": "My Dashboard Widget",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "Adds a custom card to the dashboard",
+  "type": "widget",
+  "entry": "plugin.py",
+  "requires": [],
+  "min_gd_version": "3.0.0",
+  "config_schema": {}
+}
