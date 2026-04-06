@@ -123,11 +123,64 @@ cd my-plugin/
 zip -r ../my-plugin-v1.0.0.zip .
 ```
 
+## Directory structure
+
+```
+gd3-plugin-template/
+  templates/
+    metadata-scraper/   # starter template for metadata plugins
+    theme/              # starter template for theme plugins
+    widget/             # starter template for widget plugins
+  examples/
+    ppe-metadata/       # complete PPE.pl scraper (descriptions, ratings, screenshots)
+    gd3-translator/     # complete translator (26 languages, chunked translation)
+  dist/
+    ppe-metadata-v1.0.0.zip       # ready-to-install PPE.pl plugin
+    gd3-translator-v1.0.0.zip     # ready-to-install translator plugin
+  docs/
+    HOOKS.md            # detailed hook reference
+  build.sh              # ZIP packaging helper
+```
+
 ## Examples
 
 ### PPE.pl Metadata Scraper (`examples/ppe-metadata/`)
 
-A complete metadata plugin that scrapes game data from PPE.pl (Polish gaming website). Provides descriptions (Polish), ratings, genres, release dates, developers, and full screenshot galleries. This is the reference implementation for building metadata plugins.
+A complete metadata plugin that scrapes game data from PPE.pl (Polish gaming website):
+
+- Searches via PPE.pl native API (`/api/search?search=...&type=game`)
+- Scrapes Polish descriptions, ratings (x/10), genres, release dates, developers
+- Extracts full screenshot galleries (parses `data-elements` JSON from PPE gallery widget)
+- Ratings persisted to DB (fetched once, cached permanently)
+- Screenshots shown as source in Edit Metadata panel with PPE.pl icon
+- Includes plugin logo (orange P icon)
+- Config: search engine selector, minimum match score threshold
+
+**Plugin type:** `metadata` (implements `MetadataProviderSpec`)
+
+### Description Translator (`examples/gd3-translator/`)
+
+Translates game descriptions between languages using Google Translate:
+
+- Uses `translate-shell` Python package (no API key needed)
+- 26 languages supported with emoji flag display on the translate button
+- Long texts split into chunks at paragraph boundaries (450 char limit per chunk)
+- Runs in a separate thread to avoid asyncio conflicts with FastAPI
+- Translate button appears next to Full Description and Short Description fields in Edit Metadata
+- Config: source language (default: English), target language (default: Polish)
+
+**Plugin type:** `lifecycle` (translation exposed via `/api/plugins/translate` endpoint)
+
+## Ready-to-install ZIPs
+
+The `dist/` folder contains pre-built ZIP files you can install directly:
+
+| Plugin | File | Description |
+|--------|------|-------------|
+| PPE.pl Scraper | `dist/ppe-metadata-v1.0.0.zip` | Polish game metadata (descriptions, ratings, screenshots) |
+| Translator | `dist/gd3-translator-v1.0.0.zip` | Translate descriptions between 26 languages |
+
+Install via **Settings > Plugins** in GamesDownloader - drag and drop the ZIP file.
 
 ## License
 

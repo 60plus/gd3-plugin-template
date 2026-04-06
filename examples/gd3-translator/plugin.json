@@ -1,0 +1,25 @@
+{
+  "id": "gd3-translator",
+  "name": "Description Translator",
+  "version": "1.0.0",
+  "author": "60plus",
+  "description": "Translates game descriptions between languages using Google Translate. Adds a translate button to game detail pages. Splits long texts into chunks (450 char limit) and joins them back together.",
+  "type": "lifecycle",
+  "entry": "plugin.py",
+  "requires": ["translate-shell"],
+  "min_gd_version": "3.0.0",
+  "config_schema": {
+    "from_lang": {
+      "type": "select",
+      "options": ["auto", "en", "pl", "de", "fr", "es", "it", "pt", "ru", "ja", "ko", "zh", "cs", "sk", "nl", "sv", "da", "no", "fi", "hu", "ro", "bg", "hr", "uk", "ar", "tr"],
+      "default": "en",
+      "label": "Source language"
+    },
+    "to_lang": {
+      "type": "select",
+      "options": ["pl", "en", "de", "fr", "es", "it", "pt", "ru", "ja", "ko", "zh", "cs", "sk", "nl", "sv", "da", "no", "fi", "hu", "ro", "bg", "hr", "uk", "ar", "tr"],
+      "default": "pl",
+      "label": "Target language"
+    }
+  }
+}
