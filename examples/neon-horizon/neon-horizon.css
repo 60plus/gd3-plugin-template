@@ -1,401 +1,718 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   NEON HORIZON — Futuristic Theme for GamesDownloader
-   Animated gradients, floating particles, glass morphism, neon glow
+   NEON HORIZON — Complete visual overhaul
+   Not just colors — different shapes, sizes, spacing, visual language
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Theme-level defaults (custom vars used by this theme) ───────────────── */
 :root[data-theme="neon-horizon"] {
   --nh-glow-mult: 1;
-  --nh-particle-count: 6;
   --nh-scanlines: 0;
   --nh-bg-speed: 20s;
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 20px;
+  --glass-blur-px: 20px;
+  --glass-sat: 180%;
+  --navbar-blur-px: 16px;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   SKIN COLOR PALETTES
+   SKINS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Cyan Flux (solid) ──────────────────────────────────────────────────── */
 :root[data-skin="nh-cyan"] {
   --bg: #05050f; --bg2: #0a0a1a; --bg3: #0f0f25;
-  --text: #e0e6ff; --muted: rgba(224, 230, 255, 0.35);
-  --pl: #00d4ff; --pl2: #0ea5e9;
-  --pl-light: #67e8f9; --pl-dim: rgba(0, 212, 255, 0.12);
-  --pglow: rgba(0, 212, 255, 0.45); --pglow2: rgba(0, 212, 255, 0.2);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --text: #e0e6ff; --muted: rgba(224,230,255,.35);
+  --pl: #00d4ff; --pl2: #7b2fff;
+  --pl-light: #67e8f9; --pl-dim: rgba(0,212,255,.12);
+  --pglow: rgba(0,212,255,.45); --pglow2: rgba(0,212,255,.2);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #38bdf8; --info-glow: rgba(56, 189, 248, 0.4);
-  --border: rgba(0, 212, 255, 0.15);
-  --glass-bg: rgba(5, 5, 20, 0.78);
-  --glass-border: rgba(0, 212, 255, 0.12);
-  --glass-highlight: rgba(0, 212, 255, 0.06);
-  --scrollbar-thumb: rgba(0, 212, 255, 0.3);
+  --info: #38bdf8; --info-glow: rgba(56,189,248,.4);
+  --border: rgba(0,212,255,.15);
+  --glass-bg: rgba(10,15,40,.75);
+  --glass-border: rgba(0,212,255,.12);
+  --glass-highlight: rgba(0,212,255,.06);
+  --scrollbar-thumb: rgba(0,212,255,.3);
 }
-
-/* ── Violet Surge (solid) ───────────────────────────────────────────────── */
 :root[data-skin="nh-violet"] {
   --bg: #08051a; --bg2: #0e0a28; --bg3: #160f38;
-  --text: #e4dff8; --muted: rgba(228, 223, 248, 0.35);
-  --pl: #7b2fff; --pl2: #6d28d9;
-  --pl-light: #a78bfa; --pl-dim: rgba(123, 47, 255, 0.12);
-  --pglow: rgba(123, 47, 255, 0.45); --pglow2: rgba(123, 47, 255, 0.2);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --text: #e4dff8; --muted: rgba(228,223,248,.35);
+  --pl: #7b2fff; --pl2: #e040fb;
+  --pl-light: #a78bfa; --pl-dim: rgba(123,47,255,.12);
+  --pglow: rgba(123,47,255,.45); --pglow2: rgba(123,47,255,.2);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #818cf8; --info-glow: rgba(129, 140, 248, 0.4);
-  --border: rgba(123, 47, 255, 0.15);
-  --glass-bg: rgba(8, 5, 26, 0.78);
-  --glass-border: rgba(123, 47, 255, 0.12);
-  --glass-highlight: rgba(123, 47, 255, 0.06);
-  --scrollbar-thumb: rgba(123, 47, 255, 0.3);
+  --info: #818cf8; --info-glow: rgba(129,140,248,.4);
+  --border: rgba(123,47,255,.15);
+  --glass-bg: rgba(8,5,26,.75);
+  --glass-border: rgba(123,47,255,.12);
+  --glass-highlight: rgba(123,47,255,.06);
+  --scrollbar-thumb: rgba(123,47,255,.3);
 }
-
-/* ── Magenta Pulse (solid) ──────────────────────────────────────────────── */
 :root[data-skin="nh-magenta"] {
   --bg: #0f0510; --bg2: #180a1c; --bg3: #22102a;
-  --text: #f4e0f6; --muted: rgba(244, 224, 246, 0.35);
+  --text: #f4e0f6; --muted: rgba(244,224,246,.35);
   --pl: #e040fb; --pl2: #c026d3;
-  --pl-light: #f0abfc; --pl-dim: rgba(224, 64, 251, 0.12);
-  --pglow: rgba(224, 64, 251, 0.45); --pglow2: rgba(224, 64, 251, 0.2);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --pl-light: #f0abfc; --pl-dim: rgba(224,64,251,.12);
+  --pglow: rgba(224,64,251,.45); --pglow2: rgba(224,64,251,.2);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #e879f9; --info-glow: rgba(232, 121, 249, 0.4);
-  --border: rgba(224, 64, 251, 0.15);
-  --glass-bg: rgba(15, 5, 16, 0.78);
-  --glass-border: rgba(224, 64, 251, 0.12);
-  --glass-highlight: rgba(224, 64, 251, 0.06);
-  --scrollbar-thumb: rgba(224, 64, 251, 0.3);
+  --info: #e879f9; --info-glow: rgba(232,121,249,.4);
+  --border: rgba(224,64,251,.15);
+  --glass-bg: rgba(15,5,16,.75);
+  --glass-border: rgba(224,64,251,.12);
+  --glass-highlight: rgba(224,64,251,.06);
+  --scrollbar-thumb: rgba(224,64,251,.3);
 }
-
-/* ── Gold Circuit (solid) ───────────────────────────────────────────────── */
 :root[data-skin="nh-gold"] {
   --bg: #0c0a05; --bg2: #14120a; --bg3: #1e1b10;
-  --text: #f8f0e0; --muted: rgba(248, 240, 224, 0.35);
+  --text: #f8f0e0; --muted: rgba(248,240,224,.35);
   --pl: #fbbf24; --pl2: #f59e0b;
-  --pl-light: #fde68a; --pl-dim: rgba(251, 191, 36, 0.12);
-  --pglow: rgba(251, 191, 36, 0.4); --pglow2: rgba(251, 191, 36, 0.18);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --pl-light: #fde68a; --pl-dim: rgba(251,191,36,.12);
+  --pglow: rgba(251,191,36,.4); --pglow2: rgba(251,191,36,.18);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fb923c;
-  --info: #fbbf24; --info-glow: rgba(251, 191, 36, 0.4);
-  --border: rgba(251, 191, 36, 0.15);
-  --glass-bg: rgba(12, 10, 5, 0.78);
-  --glass-border: rgba(251, 191, 36, 0.12);
-  --glass-highlight: rgba(251, 191, 36, 0.06);
-  --scrollbar-thumb: rgba(251, 191, 36, 0.3);
+  --info: #fbbf24; --info-glow: rgba(251,191,36,.4);
+  --border: rgba(251,191,36,.15);
+  --glass-bg: rgba(12,10,5,.75);
+  --glass-border: rgba(251,191,36,.12);
+  --glass-highlight: rgba(251,191,36,.06);
+  --scrollbar-thumb: rgba(251,191,36,.3);
 }
-
-/* ── Cyber (dual: cyan + violet) ────────────────────────────────────────── */
 :root[data-skin="nh-cyber"] {
   --bg: #05050f; --bg2: #0a0a1a; --bg3: #0f0f25;
-  --text: #e0e6ff; --muted: rgba(224, 230, 255, 0.35);
+  --text: #e0e6ff; --muted: rgba(224,230,255,.35);
   --pl: #00d4ff; --pl2: #7b2fff;
-  --pl-light: #67e8f9; --pl-dim: rgba(0, 212, 255, 0.12);
-  --pglow: rgba(0, 212, 255, 0.4); --pglow2: rgba(123, 47, 255, 0.25);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --pl-light: #67e8f9; --pl-dim: rgba(0,212,255,.12);
+  --pglow: rgba(0,212,255,.4); --pglow2: rgba(123,47,255,.25);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #38bdf8; --info-glow: rgba(56, 189, 248, 0.4);
-  --border: rgba(0, 212, 255, 0.15);
-  --glass-bg: rgba(5, 5, 20, 0.78);
-  --glass-border: rgba(0, 212, 255, 0.12);
-  --glass-highlight: rgba(0, 212, 255, 0.06);
-  --scrollbar-thumb: rgba(0, 212, 255, 0.3);
+  --info: #38bdf8; --info-glow: rgba(56,189,248,.4);
+  --border: rgba(0,212,255,.15);
+  --glass-bg: rgba(10,15,40,.75);
+  --glass-border: rgba(0,212,255,.12);
+  --glass-highlight: rgba(0,212,255,.06);
+  --scrollbar-thumb: rgba(0,212,255,.3);
 }
-
-/* ── Plasma (dual: magenta + cyan) ──────────────────────────────────────── */
 :root[data-skin="nh-plasma"] {
   --bg: #0a050f; --bg2: #10081a; --bg3: #180e28;
-  --text: #f0e4ff; --muted: rgba(240, 228, 255, 0.35);
+  --text: #f0e4ff; --muted: rgba(240,228,255,.35);
   --pl: #e040fb; --pl2: #00d4ff;
-  --pl-light: #f0abfc; --pl-dim: rgba(224, 64, 251, 0.12);
-  --pglow: rgba(224, 64, 251, 0.4); --pglow2: rgba(0, 212, 255, 0.25);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --pl-light: #f0abfc; --pl-dim: rgba(224,64,251,.12);
+  --pglow: rgba(224,64,251,.4); --pglow2: rgba(0,212,255,.25);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #e879f9; --info-glow: rgba(232, 121, 249, 0.4);
-  --border: rgba(224, 64, 251, 0.15);
-  --glass-bg: rgba(10, 5, 15, 0.78);
-  --glass-border: rgba(224, 64, 251, 0.12);
-  --glass-highlight: rgba(224, 64, 251, 0.06);
-  --scrollbar-thumb: rgba(224, 64, 251, 0.3);
+  --info: #e879f9; --info-glow: rgba(232,121,249,.4);
+  --border: rgba(224,64,251,.15);
+  --glass-bg: rgba(10,5,15,.75);
+  --glass-border: rgba(224,64,251,.12);
+  --glass-highlight: rgba(224,64,251,.06);
+  --scrollbar-thumb: rgba(224,64,251,.3);
 }
-
-/* ── Sunset (dual: orange + magenta) ────────────────────────────────────── */
 :root[data-skin="nh-sunset"] {
   --bg: #0f0805; --bg2: #1a0e08; --bg3: #28150e;
-  --text: #fff0e6; --muted: rgba(255, 240, 230, 0.35);
+  --text: #fff0e6; --muted: rgba(255,240,230,.35);
   --pl: #f97316; --pl2: #e040fb;
-  --pl-light: #fdba74; --pl-dim: rgba(249, 115, 22, 0.12);
-  --pglow: rgba(249, 115, 22, 0.4); --pglow2: rgba(224, 64, 251, 0.25);
-  --ok: #22c55e; --ok-glow: rgba(34, 197, 94, 0.4);
+  --pl-light: #fdba74; --pl-dim: rgba(249,115,22,.12);
+  --pglow: rgba(249,115,22,.4); --pglow2: rgba(224,64,251,.25);
+  --ok: #22c55e; --ok-glow: rgba(34,197,94,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #fb923c; --info-glow: rgba(251, 146, 60, 0.4);
-  --border: rgba(249, 115, 22, 0.15);
-  --glass-bg: rgba(15, 8, 5, 0.78);
-  --glass-border: rgba(249, 115, 22, 0.12);
-  --glass-highlight: rgba(249, 115, 22, 0.06);
-  --scrollbar-thumb: rgba(249, 115, 22, 0.3);
+  --info: #fb923c; --info-glow: rgba(251,146,60,.4);
+  --border: rgba(249,115,22,.15);
+  --glass-bg: rgba(15,8,5,.75);
+  --glass-border: rgba(249,115,22,.12);
+  --glass-highlight: rgba(249,115,22,.06);
+  --scrollbar-thumb: rgba(249,115,22,.3);
 }
-
-/* ── Aurora (dual: green + cyan) ────────────────────────────────────────── */
 :root[data-skin="nh-aurora"] {
   --bg: #050f0a; --bg2: #081a12; --bg3: #0e281c;
-  --text: #e0ffe8; --muted: rgba(224, 255, 232, 0.35);
+  --text: #e0ffe8; --muted: rgba(224,255,232,.35);
   --pl: #22c55e; --pl2: #00d4ff;
-  --pl-light: #86efac; --pl-dim: rgba(34, 197, 94, 0.12);
-  --pglow: rgba(34, 197, 94, 0.4); --pglow2: rgba(0, 212, 255, 0.25);
-  --ok: #4ade80; --ok-glow: rgba(74, 222, 128, 0.4);
+  --pl-light: #86efac; --pl-dim: rgba(34,197,94,.12);
+  --pglow: rgba(34,197,94,.4); --pglow2: rgba(0,212,255,.25);
+  --ok: #4ade80; --ok-glow: rgba(74,222,128,.4);
   --danger: #ef4444; --warning: #fbbf24;
-  --info: #34d399; --info-glow: rgba(52, 211, 153, 0.4);
-  --border: rgba(34, 197, 94, 0.15);
-  --glass-bg: rgba(5, 15, 10, 0.78);
-  --glass-border: rgba(34, 197, 94, 0.12);
-  --glass-highlight: rgba(34, 197, 94, 0.06);
-  --scrollbar-thumb: rgba(34, 197, 94, 0.3);
+  --info: #34d399; --info-glow: rgba(52,211,153,.4);
+  --border: rgba(34,197,94,.15);
+  --glass-bg: rgba(5,15,10,.75);
+  --glass-border: rgba(34,197,94,.12);
+  --glass-highlight: rgba(34,197,94,.06);
+  --scrollbar-thumb: rgba(34,197,94,.3);
 }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY
+   GRADIENT TEXT (applied by JS to dynamically loaded content)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-[data-theme="neon-horizon"] {
-  font-family: 'Rajdhani', sans-serif;
+.nh-gradient-text {
+  background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL — font, body, transitions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"],
+[data-theme="neon-horizon"] .v-application {
+  font-family: 'Rajdhani', sans-serif !important;
+  letter-spacing: 0.02em !important;
+  --transition: .2s cubic-bezier(.25,.46,.45,.94);
+  --transition-slow: .4s cubic-bezier(.25,.46,.45,.94);
+}
+
+/* Hide default ambient background — NeonHorizonLayout has its own */
+[data-theme="neon-horizon"] .ambient-bg {
+  display: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY — Orbitron EVERYWHERE headings, bigger sizes, wider spacing
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] h1,
 [data-theme="neon-horizon"] h2,
 [data-theme="neon-horizon"] h3,
-[data-theme="neon-horizon"] .gd-game-title,
-[data-theme="neon-horizon"] .section-label,
-[data-theme="neon-horizon"] .glass-title,
-[data-theme="neon-horizon"] .home-lib-title,
-[data-theme="neon-horizon"] .emu-plat-name,
-[data-theme="neon-horizon"] .couch-plat-name {
-  font-family: 'Orbitron', sans-serif;
+[data-theme="neon-horizon"] h4,
+[data-theme="neon-horizon"] .gd-title,
+[data-theme="neon-horizon"] .title-text,
+[data-theme="neon-horizon"] .home-section-title,
+[data-theme="neon-horizon"] .home-lib-card-name,
+[data-theme="neon-horizon"] .emu-platform-name-text,
+[data-theme="neon-horizon"] .v-card-title,
+[data-theme="neon-horizon"] .v-toolbar-title,
+[data-theme="neon-horizon"] .v-tab,
+[data-theme="neon-horizon"] .gd-rating-num,
+[data-theme="neon-horizon"] .gd-ext-val,
+[data-theme="neon-horizon"] .cover-score,
+[data-theme="neon-horizon"] .settings-section-title,
+[data-theme="neon-horizon"] .overlay-title,
+[data-theme="neon-horizon"] .emu-overlay-title,
+[data-theme="neon-horizon"] .list-title,
+[data-theme="neon-horizon"] .gd-dk,
+[data-theme="neon-horizon"] .gd-section-label,
+[data-theme="neon-horizon"] .home-section-link,
+[data-theme="neon-horizon"] .sync-dialog-header,
+[data-theme="neon-horizon"] .gd-confirm-title,
+[data-theme="neon-horizon"] .gl-modal-title,
+[data-theme="neon-horizon"] .cmode-exit-hdr,
+[data-theme="neon-horizon"] .emu-platform-count,
+[data-theme="neon-horizon"] .home-lib-card-count,
+[data-theme="neon-horizon"] .home-recent-overlay-title {
+  font-family: 'Orbitron', sans-serif !important;
 }
 
-[data-theme="neon-horizon"] .section-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--muted);
+/* Section labels — distinct uppercase accent style */
+[data-theme="neon-horizon"] .gd-section-label,
+[data-theme="neon-horizon"] .home-section-title {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  color: var(--muted) !important;
+  margin-bottom: 16px !important;
 }
+
+/* Tabs — Orbitron uppercase */
+[data-theme="neon-horizon"] .v-tab {
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANIMATED GRADIENT BACKGROUND
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-[data-theme="neon-horizon"] .ambient-bg::after {
-  content: '';
-  position: absolute; inset: 0; z-index: 1;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pglow2) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 20%, var(--pglow) 0%, transparent 50%);
-  opacity: 0.6;
-  animation: nh-bg-shift var(--nh-bg-speed, 20s) ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes nh-bg-shift {
-  0%   { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(30deg); }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   FLOATING PARTICLES (CSS-only)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-[data-theme="neon-horizon"] #app::before {
-  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1.5px 1.5px at 10% 90%, var(--pl) 50%, transparent 50%),
-    radial-gradient(2px 2px at 25% 70%, var(--pl) 40%, transparent 50%),
-    radial-gradient(1px 1px at 40% 85%, var(--pl-light) 50%, transparent 50%),
-    radial-gradient(2.5px 2.5px at 55% 75%, var(--pl) 50%, transparent 50%),
-    radial-gradient(1.5px 1.5px at 70% 80%, var(--pl-light) 50%, transparent 50%),
-    radial-gradient(2px 2px at 85% 65%, var(--pl) 40%, transparent 50%);
-  background-size: 100% 100%;
-  animation: nh-particles 12s ease-in-out infinite;
-  opacity: 0.35;
-}
-
-@keyframes nh-particles {
-  0%   { transform: translateY(0) scale(1);     opacity: 0.35; }
-  25%  { transform: translateY(-15vh) scale(1.1); opacity: 0.25; }
-  50%  { transform: translateY(-30vh) scale(0.9); opacity: 0.4; }
-  75%  { transform: translateY(-45vh) scale(1.15); opacity: 0.2; }
-  100% { transform: translateY(-60vh) scale(1);   opacity: 0.35; }
-}
-
-[data-theme="neon-horizon"] #app::after {
-  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 15% 50%, var(--pl2, var(--pl)) 50%, transparent 50%),
-    radial-gradient(1.5px 1.5px at 35% 40%, var(--pl2, var(--pl)) 40%, transparent 50%),
-    radial-gradient(2px 2px at 60% 55%, var(--pl2, var(--pl)) 50%, transparent 50%),
-    radial-gradient(1px 1px at 80% 35%, var(--pl2, var(--pl)) 50%, transparent 50%);
-  background-size: 100% 100%;
-  animation: nh-particles2 18s ease-in-out infinite;
-  opacity: 0.2;
-}
-
-@keyframes nh-particles2 {
-  0%   { transform: translateY(10vh) scale(1);   opacity: 0.2; }
-  50%  { transform: translateY(-40vh) scale(1.2); opacity: 0.15; }
-  100% { transform: translateY(10vh) scale(1);   opacity: 0.2; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   GLASS MORPHISM / NAVBAR / HERO / CARDS / BUTTONS etc.
+   GLASS PANELS — deeper, with inset highlight and stronger border
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .glass,
 [data-theme="neon-horizon"] .glass-panel,
 [data-theme="neon-horizon"] .glass-card {
-  box-shadow: 0 8px 32px rgba(0,0,0,.35), inset 0 1px 0 var(--glass-highlight);
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), inset 0 1px 0 var(--glass-highlight) !important;
 }
 
 [data-theme="neon-horizon"] .glass-card:hover {
-  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 calc(20px * var(--nh-glow-mult,1)) var(--pglow2), inset 0 1px 0 var(--glass-highlight);
+  border-color: var(--pl) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 24px var(--pglow2), inset 0 1px 0 var(--glass-highlight) !important;
+  transform: translateY(-6px) !important;
 }
 
-[data-theme="neon-horizon"] .glass-navbar {
-  border-bottom: 1px solid var(--glass-border) !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,.4);
-}
 
-[data-theme="neon-horizon"] .glass-navbar .v-btn--active,
-[data-theme="neon-horizon"] .glass-navbar .router-link-active {
-  text-shadow: 0 0 calc(12px * var(--nh-glow-mult,1)) var(--pglow);
-}
-
-[data-theme="neon-horizon"] .gd-hero { border-radius: var(--radius); overflow: hidden; }
-
-[data-theme="neon-horizon"] .gd-game-title {
-  text-shadow: 0 0 calc(30px * var(--nh-glow-mult,1)) var(--pglow);
-}
-
-[data-theme="neon-horizon"] .home-lib-card {
-  transition: all .3s cubic-bezier(.25,.46,.45,.94);
-}
-[data-theme="neon-horizon"] .home-lib-card:hover {
-  transform: translateY(-6px); border-color: var(--pl);
-  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 calc(24px * var(--nh-glow-mult,1)) var(--pglow2);
-}
-[data-theme="neon-horizon"] .home-lib-title {
-  text-shadow: 0 0 calc(10px * var(--nh-glow-mult,1)) var(--pglow);
-}
-
-[data-theme="neon-horizon"] .cover-grid .glass-card {
-  transition: all .25s cubic-bezier(.25,.46,.45,.94);
-}
-[data-theme="neon-horizon"] .cover-grid .glass-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 calc(20px * var(--nh-glow-mult,1)) var(--pglow2);
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUTTONS — gradient primary, ghost with neon hover
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .v-btn--variant-flat.bg-primary,
-[data-theme="neon-horizon"] .btn-primary {
+[data-theme="neon-horizon"] .gd-btn-play,
+[data-theme="neon-horizon"] .gd-btn-dl,
+[data-theme="neon-horizon"] .sync-btn,
+[data-theme="neon-horizon"] .emu-action-btn,
+[data-theme="neon-horizon"] .sync-dlg-ok,
+[data-theme="neon-horizon"] .gl-btn--primary,
+[data-theme="neon-horizon"] .gd-confirm-btn:not(.gd-confirm-btn--ghost) {
   background: linear-gradient(135deg, var(--pl), var(--pl2, var(--pl))) !important;
-  box-shadow: 0 4px calc(20px * var(--nh-glow-mult,1)) var(--pglow2);
-  transition: all .2s ease;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 20px var(--pglow2) !important;
+  transition: all .2s ease !important;
+  font-weight: 700 !important;
 }
+
 [data-theme="neon-horizon"] .v-btn--variant-flat.bg-primary:hover,
-[data-theme="neon-horizon"] .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px calc(30px * var(--nh-glow-mult,1)) var(--pglow);
+[data-theme="neon-horizon"] .gd-btn-play:hover,
+[data-theme="neon-horizon"] .gd-btn-dl:hover,
+[data-theme="neon-horizon"] .sync-btn:hover,
+[data-theme="neon-horizon"] .emu-action-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 30px var(--pglow) !important;
 }
 
-[data-theme="neon-horizon"] .media-carousel-item:hover,
-[data-theme="neon-horizon"] .gd-media-item:hover {
-  border-color: var(--pl);
-  box-shadow: 0 0 calc(20px * var(--nh-glow-mult,1)) var(--pglow2);
+[data-theme="neon-horizon"] .gd-btn-ghost,
+[data-theme="neon-horizon"] .gl-btn--ghost,
+[data-theme="neon-horizon"] .gd-confirm-btn--ghost {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  transition: all .2s !important;
 }
 
-[data-theme="neon-horizon"] .emu-plat-bar .active,
-[data-theme="neon-horizon"] .emu-platform-btn.active {
-  text-shadow: 0 0 calc(8px * var(--nh-glow-mult,1)) var(--pglow);
+[data-theme="neon-horizon"] .gd-btn-ghost:hover,
+[data-theme="neon-horizon"] .gl-btn--ghost:hover {
+  border-color: var(--pl) !important;
+  background: rgba(255,255,255,.08) !important;
+  box-shadow: 0 0 16px var(--pglow2) !important;
 }
 
-/* Couch Mode */
-[data-theme="neon-horizon"] .couch-card.active,
-[data-theme="neon-horizon"] .platform-card.active {
-  box-shadow: 0 0 calc(60px * var(--nh-glow-mult,1)) var(--pglow2), 0 30px 60px rgba(0,0,0,.5);
-}
-[data-theme="neon-horizon"] .couch-plat-name,
-[data-theme="neon-horizon"] .platform-name {
-  text-shadow: 0 0 calc(20px * var(--nh-glow-mult,1)) var(--pglow);
-}
-[data-theme="neon-horizon"] .couch-rom-count,
-[data-theme="neon-horizon"] .platform-rom-count {
-  background: linear-gradient(135deg, var(--pl), var(--pl2, var(--pl)));
-}
-[data-theme="neon-horizon"] .couch-pause-panel,
-[data-theme="neon-horizon"] #gd-ingame-menu {
-  box-shadow: 0 0 calc(60px * var(--nh-glow-mult,1)) var(--pglow2), 0 32px 80px rgba(0,0,0,.9);
-}
-[data-theme="neon-horizon"] .couch-pause-hdr,
-[data-theme="neon-horizon"] #gd-ingame-menu .gd-mi-title {
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--pl);
-}
-[data-theme="neon-horizon"] .couch-mi:hover, [data-theme="neon-horizon"] .couch-mi.focus,
-[data-theme="neon-horizon"] .gd-mi:hover, [data-theme="neon-horizon"] .gd-mi.focus {
-  background: rgba(0,212,255,.12); border-color: var(--pl);
+[data-theme="neon-horizon"] .gd-btn-danger {
+  background: rgba(239,68,68,.15) !important;
+  border: 1px solid rgba(239,68,68,.3) !important;
+  color: #f87171 !important;
 }
 
-/* Ratings */
-[data-theme="neon-horizon"] .gd-rating-score,
-[data-theme="neon-horizon"] .cover-rating-val {
-  font-family: 'Orbitron', sans-serif;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME PAGE — library cards completely restyled
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .home-lib-card {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3) !important;
+  transition: all .3s cubic-bezier(.25,.46,.45,.94) !important;
 }
 
-/* Scrollbar */
+[data-theme="neon-horizon"] .home-lib-card:hover {
+  transform: translateY(-8px) !important;
+  border-color: var(--pl) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 0 30px var(--pglow2) !important;
+}
+
+[data-theme="neon-horizon"] .home-lib-card-name {
+  text-shadow: 0 0 12px var(--pglow) !important;
+}
+
+[data-theme="neon-horizon"] .home-lib-card-count {
+  color: var(--pl) !important;
+}
+
+[data-theme="neon-horizon"] .home-section-link {
+  color: var(--pl) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* Recently added row */
+[data-theme="neon-horizon"] .home-recent-cover {
+  transition: all .25s ease !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+[data-theme="neon-horizon"] .home-recent-cover:hover {
+  transform: translateY(-4px) !important;
+  border-color: var(--pl) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.5), 0 0 20px var(--pglow2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO — game detail pages, neon title glow, cover frame glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .gd-hero {
+  border-radius: var(--radius) !important;
+}
+
+[data-theme="neon-horizon"] .gd-title {
+  font-size: 32px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 30px var(--pglow) !important;
+}
+
+[data-theme="neon-horizon"] .gd-cover-frame {
+  border: 2px solid rgba(255,255,255,.1) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 20px var(--pglow2) !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="neon-horizon"] .gd-rating-num {
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px var(--pglow2) !important;
+}
+
+/* Rating blocks styled like preview */
+[data-theme="neon-horizon"] .gd-ext-score {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+}
+
+/* Details list */
+[data-theme="neon-horizon"] .gd-dlist {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+[data-theme="neon-horizon"] .gd-dk {
+  font-size: 10px !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--muted) !important;
+  border-bottom: 1px solid rgba(255,255,255,.04) !important;
+}
+
+[data-theme="neon-horizon"] .gd-dv {
+  border-bottom: 1px solid rgba(255,255,255,.04) !important;
+}
+
+[data-theme="neon-horizon"] .gd-owner-crown {
+  color: #f59e0b !important;
+  filter: drop-shadow(0 0 4px rgba(245,158,11,.4)) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MEDIA CAROUSEL — hover glow, zoom on hover
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .gd-slide {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  transition: all .25s ease !important;
+}
+
+[data-theme="neon-horizon"] .gd-slide:hover {
+  border-color: var(--pl) !important;
+  box-shadow: 0 0 20px var(--pglow2) !important;
+}
+
+[data-theme="neon-horizon"] .gd-slide img {
+  transition: transform .3s ease !important;
+}
+
+[data-theme="neon-horizon"] .gd-slide:hover img {
+  transform: scale(1.06) !important;
+}
+
+[data-theme="neon-horizon"] .gd-dot-item.active {
+  background: var(--pl) !important;
+  box-shadow: 0 0 8px var(--pglow) !important;
+}
+
+/* Carousel scrollbar */
+[data-theme="neon-horizon"] .gd-carousel::-webkit-scrollbar { height: 4px; }
+[data-theme="neon-horizon"] .gd-carousel::-webkit-scrollbar-thumb {
+  background: var(--pl); border-radius: 2px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COVER GRIDS — GOG, Games library cards hover
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .cover-wrap {
+  transition: all .25s cubic-bezier(.25,.46,.45,.94) !important;
+}
+
+[data-theme="neon-horizon"] .cover-wrap:hover {
+  transform: translateY(-6px) !important;
+}
+
+[data-theme="neon-horizon"] .cover-img-wrap {
+  border: 1px solid var(--glass-border) !important;
+  transition: all .25s ease !important;
+}
+
+[data-theme="neon-horizon"] .cover-wrap:hover .cover-img-wrap {
+  border-color: var(--pl) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 20px var(--pglow2) !important;
+}
+
+[data-theme="neon-horizon"] .cover-title {
+  font-weight: 700 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EMULATION LIBRARY — platform bar, ROM cards
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .emu-platform-name-text {
+  text-shadow: 0 0 12px var(--pglow) !important;
+}
+
+[data-theme="neon-horizon"] .emu-cover-wrap {
+  transition: all .25s cubic-bezier(.25,.46,.45,.94) !important;
+}
+
+[data-theme="neon-horizon"] .emu-cover-wrap:hover {
+  transform: translateY(-6px) !important;
+}
+
+[data-theme="neon-horizon"] .emu-cover-img-wrap {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  transition: all .25s ease !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+}
+
+[data-theme="neon-horizon"] .emu-cover-wrap:hover .emu-cover-img-wrap {
+  border-color: var(--pl) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 20px var(--pglow2) !important;
+}
+
+[data-theme="neon-horizon"] .emu-cover-title {
+  font-weight: 700 !important;
+  font-size: 11px !important;
+}
+
+[data-theme="neon-horizon"] .emu-badge {
+  background: rgba(0,0,0,.7) !important;
+  font-size: 9px !important;
+  color: #fbbf24 !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="neon-horizon"] .emu-size-btn.active {
+  box-shadow: 0 0 10px var(--pglow2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GENRE TAGS — neon styled
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .gd-genre-tag,
+[data-theme="neon-horizon"] .genre-chip {
+  background: rgba(0,212,255,.1) !important;
+  border: 1px solid rgba(0,212,255,.2) !important;
+  color: var(--pl) !important;
+  font-size: 11px !important;
+  transition: all .2s !important;
+}
+
+[data-theme="neon-horizon"] .gd-genre-tag:hover,
+[data-theme="neon-horizon"] .genre-chip:hover {
+  border-color: var(--pl) !important;
+  box-shadow: 0 0 8px var(--pglow2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIST VIEW — row hover glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .list-row {
+  transition: all .2s ease !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+[data-theme="neon-horizon"] .list-row:hover {
+  border-color: var(--pl) !important;
+  box-shadow: 0 0 16px var(--pglow2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COUCH MODE — exit panel, cards glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .cmode-exit-panel {
+  background: rgba(10,6,24,.97) !important;
+  border: 1px solid rgba(0,212,255,.15) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 60px var(--pglow2), 0 32px 80px rgba(0,0,0,.9) !important;
+}
+
+[data-theme="neon-horizon"] .cmode-exit-hdr {
+  color: var(--pl) !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  font-size: 10px !important;
+}
+
+[data-theme="neon-horizon"] .cmode-exit-row {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.07) !important;
+  border-radius: 12px !important;
+  transition: all .12s !important;
+}
+
+[data-theme="neon-horizon"] .cmode-exit-row:hover,
+[data-theme="neon-horizon"] .cmode-exit-row--focus {
+  background: rgba(0,212,255,.12) !important;
+  border-color: rgba(0,212,255,.35) !important;
+  color: #fff !important;
+}
+
+[data-theme="neon-horizon"] .cmode-exit-row--danger:hover {
+  background: rgba(239,68,68,.12) !important;
+  border-color: rgba(239,68,68,.35) !important;
+  color: #f87171 !important;
+}
+
+/* Home couch platform cards */
+[data-theme="neon-horizon"] .home-lib-card--couch:hover {
+  box-shadow: 0 0 40px var(--pglow2), 0 20px 50px rgba(0,0,0,.5) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIALOGS — glass + neon border
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .v-overlay__content > .v-card,
+[data-theme="neon-horizon"] .v-dialog .v-card,
+[data-theme="neon-horizon"] .sync-dialog,
+[data-theme="neon-horizon"] .gd-confirm-box,
+[data-theme="neon-horizon"] .gl-modal {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(0,212,255,.15) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 40px var(--pglow2), 0 24px 60px rgba(0,0,0,.6) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INPUTS — focus glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .v-field--focused {
+  box-shadow: 0 0 12px var(--pglow2) !important;
+}
+
+[data-theme="neon-horizon"] input:focus,
+[data-theme="neon-horizon"] textarea:focus {
+  border-color: var(--pl) !important;
+  box-shadow: 0 0 12px var(--pglow2) !important;
+  outline: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BACK BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .gd-back-pill,
+[data-theme="neon-horizon"] .emu-back-btn,
+[data-theme="neon-horizon"] .lib-back-btn {
+  transition: all .2s !important;
+}
+
+[data-theme="neon-horizon"] .gd-back-pill:hover,
+[data-theme="neon-horizon"] .emu-back-btn:hover,
+[data-theme="neon-horizon"] .lib-back-btn:hover {
+  border-color: var(--pl) !important;
+  box-shadow: 0 0 12px var(--pglow2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 [data-theme="neon-horizon"] ::-webkit-scrollbar { width: 6px; height: 4px; }
 [data-theme="neon-horizon"] ::-webkit-scrollbar-track { background: transparent; }
 [data-theme="neon-horizon"] ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 [data-theme="neon-horizon"] ::-webkit-scrollbar-thumb:hover { background: var(--pl); }
 
-/* Scanlines (optional) */
-[data-theme="neon-horizon"]::after {
-  content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);
-  opacity: var(--nh-scanlines, 0); transition: opacity .3s ease;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCANLINE OVERLAY (optional)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .ambient-bg .grid-pattern {
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px) !important;
+  opacity: var(--nh-scanlines, 0) !important;
 }
 
-/* Dialogs */
-[data-theme="neon-horizon"] .v-overlay__content > .v-card,
-[data-theme="neon-horizon"] .v-dialog .v-card {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur-px, 20px)) saturate(180%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 0 calc(40px * var(--nh-glow-mult,1)) var(--pglow2), 0 24px 60px rgba(0,0,0,.6);
-}
-[data-theme="neon-horizon"] .v-card-title { font-family: 'Orbitron', sans-serif; }
 
-/* Inputs */
-[data-theme="neon-horizon"] .v-field--focused {
-  box-shadow: 0 0 calc(12px * var(--nh-glow-mult,1)) var(--pglow2);
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION, LINKS
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Settings */
-[data-theme="neon-horizon"] .settings-section-title {
-  font-family: 'Orbitron', sans-serif; letter-spacing: .1em;
-}
-
-/* Classic layout */
-[data-theme="neon-horizon"] .cl-sidebar { box-shadow: 4px 0 24px rgba(0,0,0,.4); }
-[data-theme="neon-horizon"] .cl-game-item.active { text-shadow: 0 0 calc(8px * var(--nh-glow-mult,1)) var(--pglow); }
-
-/* Selection */
 [data-theme="neon-horizon"] ::selection { background: var(--pl); color: #fff; }
-[data-theme="neon-horizon"] a:hover { text-shadow: 0 0 calc(8px * var(--nh-glow-mult,1)) var(--pglow2); }
+[data-theme="neon-horizon"] a:hover { text-shadow: 0 0 8px var(--pglow2); }
 
-/* Transitions */
-[data-theme="neon-horizon"] {
-  --transition: .2s cubic-bezier(.25,.46,.45,.94);
-  --transition-slow: .4s cubic-bezier(.25,.46,.45,.94);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALPHA NAV
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .alpha-btn.active {
+  color: var(--pl) !important;
+  text-shadow: 0 0 8px var(--pglow) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLASSIC LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .cl-sidebar {
+  box-shadow: 4px 0 24px rgba(0,0,0,.4) !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO BANNER — gradient text on title (responds to skin vars)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="neon-horizon"] .nh-hero-title {
+  background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: drop-shadow(0 0 30px var(--pglow, rgba(0,212,255,.4)));
+}
+
+[data-theme="neon-horizon"] .nh-hero-badge {
+  background: var(--pl-dim, rgba(0,212,255,.12)) !important;
+  border-color: rgba(0,212,255,.2) !important;
+  color: var(--pl) !important;
+}
+
+[data-theme="neon-horizon"] .nh-hero-genre {
+  border-color: var(--glass-border) !important;
 }
