@@ -1,0 +1,12 @@
+{
+  "id": "neon-horizon",
+  "name": "NEON HORIZON",
+  "version": "1.0.0",
+  "author": "60plus",
+  "description": "Futuristic theme with animated gradients, floating particles, glass morphism, and neon glow effects",
+  "type": "theme",
+  "entry": "plugin.py",
+  "requires": [],
+  "min_gd_version": "3.0.0",
+  "config_schema": {}
+}
