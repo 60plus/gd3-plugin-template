@@ -9,7 +9,7 @@ Templates and examples for building plugins for [GamesDownloader V3](https://git
 | **metadata** | Scrape game info from external sources (descriptions, ratings, screenshots) | PPE.pl scraper |
 | **download** | Add new download sources | Torrent tracker integration |
 | **library** | Scan game libraries from new sources | NAS folder scanner |
-| **theme** | Add custom themes, skins, and layouts | Retro theme pack |
+| **theme** | Add custom themes, skins, and layouts | NEON HORIZON theme |
 | **widget** | Add dashboard cards and widgets | RSS feed reader |
 | **lifecycle** | Hook into app events (game added, download complete, startup/shutdown) | Discord notifier |
 
@@ -22,11 +22,11 @@ Templates and examples for building plugins for [GamesDownloader V3](https://git
 
 ```
 my-plugin/
-  plugin.json      # manifest (required)
-  plugin.py        # entry point with Plugin class (required)
-  logo.png         # icon shown in Settings (optional)
-  requirements.txt # pip dependencies (optional)
-  README.md        # documentation (optional)
+  plugin.json       # manifest (required)
+  plugin.py         # entry point with Plugin class (required)
+  logo.png          # icon shown in Settings (optional)
+  requirements.txt  # pip dependencies (optional)
+  README.md         # documentation (optional)
 ```
 
 ## Plugin manifest (plugin.json)
@@ -134,9 +134,11 @@ gd3-plugin-template/
   examples/
     ppe-metadata/       # complete PPE.pl scraper (descriptions, ratings, screenshots)
     gd3-translator/     # complete translator (26 languages, chunked translation)
+    neon-horizon/       # complete theme plugin (8 skins, particles, neon glow)
   dist/
     ppe-metadata-v1.0.0.zip       # ready-to-install PPE.pl plugin
     gd3-translator-v1.0.0.zip     # ready-to-install translator plugin
+    neon-horizon-v1.0.0.zip       # ready-to-install NEON HORIZON theme
   docs/
     HOOKS.md            # detailed hook reference
   build.sh              # ZIP packaging helper
@@ -171,6 +173,22 @@ Translates game descriptions between languages using Google Translate:
 
 **Plugin type:** `lifecycle` (translation exposed via `/api/plugins/translate` endpoint)
 
+### NEON HORIZON Theme (`examples/neon-horizon/`)
+
+A futuristic theme with animated gradients, floating particles, glass morphism, and neon glow effects:
+
+- **8 skins:** 4 solid (Cyan Flux, Violet Surge, Magenta Pulse, Gold Circuit) + 4 dual-color gradient (Cyber, Plasma, Sunset, Aurora)
+- **Typography:** Orbitron for headings, Rajdhani for body text
+- **Animated background:** Radial gradient with hue-rotate shift animation
+- **CSS-only floating particles:** Two layers of animated dots for depth
+- **Neon glow effects:** Configurable intensity on cards, text, buttons, and panels
+- **Glass morphism:** Enhanced shadows with inset highlights
+- **Scanline overlay:** Optional CRT-style horizontal lines (toggle in settings)
+- **Couch Mode:** 3D perspective glow on carousel cards, gradient ROM count badges
+- **5 configurable settings:** Particle Count, Neon Glow intensity, Glass Blur, Scanline Overlay, BG Animation Speed
+
+**Plugin type:** `theme` (implements `FrontendProviderSpec`)
+
 ## Ready-to-install ZIPs
 
 The `dist/` folder contains pre-built ZIP files you can install directly:
@@ -179,6 +197,7 @@ The `dist/` folder contains pre-built ZIP files you can install directly:
 |--------|------|-------------|
 | PPE.pl Scraper | `dist/ppe-metadata-v1.0.0.zip` | Polish game metadata (descriptions, ratings, screenshots) |
 | Translator | `dist/gd3-translator-v1.0.0.zip` | Translate descriptions between 26 languages |
+| NEON HORIZON | `dist/neon-horizon-v1.0.0.zip` | Futuristic theme with particles, neon glow, 8 skins |
 
 Install via **Settings > Plugins** in GamesDownloader - drag and drop the ZIP file.
 
