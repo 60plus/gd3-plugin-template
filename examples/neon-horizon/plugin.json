@@ -8,5 +8,6 @@
   "entry": "plugin.py",
   "requires": [],
   "min_gd_version": "3.0.0",
+  "has_logo": true,
   "config_schema": {}
 }

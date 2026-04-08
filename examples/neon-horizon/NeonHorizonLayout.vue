@@ -1,12 +1,12 @@
 <template>
-  <div class="nh-shell">
+  <div class="nh-shell" :class="{ 'nh-no-anim': !themeStore.animations }">
     <!-- ── Animated gradient background ─────────────────────────────────── -->
-    <div class="nh-bg-gradient" />
+    <div v-if="themeStore.ambient" class="nh-bg-gradient" />
 
     <!-- ── Floating particles ───────────────────────────────────────────── -->
-    <div class="nh-particles">
+    <div v-if="themeStore.animations && particleCount > 0" class="nh-particles">
       <div
-        v-for="i in 8"
+        v-for="i in particleCount"
         :key="i"
         class="nh-particle"
         :style="{
@@ -26,6 +26,7 @@
       </router-link>
 
       <div class="nh-nav-tabs">
+        <router-link to="/" class="nh-tab" :class="{ active: isHomePage }">Home</router-link>
         <router-link v-if="isAdmin" to="/library" class="nh-tab" :class="{ active: isRouteActive('/library') }">GOG Library</router-link>
         <router-link to="/games" class="nh-tab" :class="{ active: isRouteActive('/games') }">Games Library</router-link>
         <router-link to="/emulation" class="nh-tab" :class="{ active: isRouteActive('/emulation') }">Emulation</router-link>
@@ -91,9 +92,13 @@
 
     <!-- ── Main content ─────────────────────────────────────────────────── -->
     <main class="nh-main" :class="{ 'nh-main--full': $route.meta.fullBleed }">
-      <!-- Custom home page for NEON HORIZON -->
-      <NeonHorizonHome v-if="isHomePage" />
-      <!-- All other pages use standard router-view -->
+      <!-- Global search — takes over entire content when query is active -->
+      <NeonHorizonSearch v-if="searchQuery" :query="searchQuery" :key="'search-'+searchQuery" />
+      <!-- Custom home page -->
+      <NeonHorizonHome v-else-if="isHomePage" />
+      <!-- Custom library views (GOG, Games, Emulation) -->
+      <NeonHorizonLibrary v-else-if="isNhLibraryView" :key="$route.path" />
+      <!-- All other pages (detail, profile, settings) use standard router-view -->
       <router-view v-else v-slot="{ Component }">
         <template v-if="$route.meta.fullBleed">
           <component :is="Component" :key="$route.path" />
@@ -112,11 +117,20 @@
 import { ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NeonHorizonHome from "./NeonHorizonHome.vue";
+import NeonHorizonLibrary from "./NeonHorizonLibrary.vue";
+import NeonHorizonSearch from "./NeonHorizonSearch.vue";
 
 // Use GD plugin API for stores (not compiled into plugin bundle)
 const _gd = (window as any).__GD__;
 const auth = _gd.stores.auth();
 const socketStore = _gd.stores.socket();
+const themeStore = _gd.stores.theme();
+
+// Read particle count from theme settings (plugin.py declares 'particleCount' setting)
+const particleCount = computed(() => {
+  const val = themeStore.getThemeSettingValue('particleCount')
+  return Number(val) || 6
+});
 const router = useRouter();
 const route  = useRoute();
 
@@ -145,19 +159,22 @@ const userRole = computed(() => {
 const isAdmin = computed(() => auth.user?.role === 'admin');
 const isHomePage = computed(() => route.path === '/' || route.path === '/home');
 
+// Library routes: show NeonHorizonLibrary instead of default GD views
+// Matches: /library, /games, /emulation, /emulation/:platform
+// Does NOT match: /library/:id (detail), /games/:id, /emulation/:platform/:id
+const isNhLibraryView = computed(() => {
+  const p = route.path;
+  if (p === '/library' || p === '/games' || p === '/emulation') return true;
+  if (p.startsWith('/emulation/') && !p.match(/^\/emulation\/[^/]+\/\d/)) return true;
+  return false;
+});
+
 function isRouteActive(prefix: string): boolean {
   return route.path === prefix || route.path.startsWith(prefix + '/');
 }
 
-// Search sync with route
-const isLibraryRoute = computed(() =>
-  route.path.startsWith("/games") ||
-  route.path.startsWith("/library") ||
-  route.path.startsWith("/emulation")
-);
-
+// Search sync — works on ALL routes (NH search is global)
 watch(searchQuery, (q) => {
-  if (!isLibraryRoute.value) return;
   const cur = Array.isArray(route.query.q) ? route.query.q[0] : route.query.q;
   if (q !== (cur || "")) {
     router.replace({ query: { ...route.query, q: q || undefined } });
@@ -168,8 +185,6 @@ watch(() => route.query.q, (q) => {
   const val = (Array.isArray(q) ? q[0] : q) || "";
   if (searchQuery.value !== val) searchQuery.value = val;
 }, { immediate: true });
-
-watch(isLibraryRoute, (is) => { if (!is) searchQuery.value = ""; });
 
 function handleLogout() {
   showUserMenu.value = false;
@@ -488,6 +503,17 @@ const vClickOutside = {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATIONS DISABLED
+   ═══════════════════════════════════════════════════════════════════════════ */
+.nh-no-anim,
+.nh-no-anim * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+}
+.nh-no-anim .nh-bg-gradient { animation: none !important; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SCROLLBAR

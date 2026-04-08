@@ -8,7 +8,7 @@
       @mouseenter="stopHeroRotation"
       @mouseleave="startHeroRotation"
     >
-      <div class="nh-hero-bg" :class="{ 'nh-hero-bg--fade': heroFading }">
+      <div class="nh-hero-bg" :class="{ 'nh-hero-bg--fade': heroFading, 'nh-hero-bg--no-anim': !themeStore.animations }">
         <img
           :src="currentHero.background || currentHero.cover || ''"
           :key="currentHero.id + '-' + currentHero.library"
@@ -133,7 +133,7 @@ const client = _gd.api
 /* ── Interfaces ─────────────────────────────────────────────────────────── */
 interface LibGame { id: number; title: string; slug: string; source: string; cover_path: string | null; background_path: string | null; genres?: string[] }
 interface GogGame { id: number; title: string; slug: string; cover_path: string | null; cover_url: string | null; background_path: string | null; genres?: string[] }
-interface EmuRom  { id: number; name: string; cover_path: string | null; cover_type: string | null; cover_aspect: string | null; platform_slug: string | null; platform_fs_slug: string | null; platform_name: string | null; platform_cover_aspect: string }
+interface EmuRom  { id: number; name: string; cover_path: string | null; cover_type: string | null; cover_aspect: string | null; background_path: string | null; platform_slug: string | null; platform_fs_slug: string | null; platform_name: string | null; platform_cover_aspect: string }
 
 interface HeroGame {
   id: number
@@ -157,6 +157,7 @@ function gogCoverSrc(g: GogGame): string {
 
 const router = useRouter()
 const auth   = _gd.stores.auth()
+const themeStore = _gd.stores.theme()
 
 /* ── State ───────────────────────────────────────────────────────────────── */
 const libGames  = ref<LibGame[]>([])
@@ -189,7 +190,7 @@ function buildHeroPool() {
     if (g.background_path) pool.push({ id: g.id, title: g.title, library: 'games', cover: g.cover_path, background: g.background_path, genres: g.genres })
   }
   for (const r of emuRecent.value) {
-    if (r.cover_path) pool.push({ id: r.id, title: r.name, library: 'emulation', cover: r.cover_path, background: r.cover_path, platformSlug: r.platform_slug ?? undefined })
+    if (r.background_path || r.cover_path) pool.push({ id: r.id, title: r.name, library: 'emulation', cover: r.cover_path, background: r.background_path || r.cover_path, platformSlug: r.platform_slug ?? undefined })
   }
   // Shuffle
   for (let i = pool.length - 1; i > 0; i--) {
@@ -211,7 +212,7 @@ function advanceHero() {
 
 function startHeroRotation() {
   stopHeroRotation()
-  if (heroPool.value.length > 1) heroTimer = setInterval(advanceHero, 10000)
+  if (heroPool.value.length > 1 && themeStore.heroAnim) heroTimer = setInterval(advanceHero, 10000)
 }
 
 function stopHeroRotation() {
@@ -320,6 +321,7 @@ onUnmounted(stopHeroRotation)
   0%   { transform: scale(1.05) translate(0, 0); }
   100% { transform: scale(1.12) translate(-2%, -1%); }
 }
+.nh-hero-bg--no-anim .nh-hero-bg-img { animation: none !important; }
 
 /* Bottom gradient — transparent to bg */
 .nh-hero-gradient {
@@ -511,7 +513,8 @@ onUnmounted(stopHeroRotation)
 
 /* ── Horizontal scroll ───────────────────────────────────────────────────── */
 .nh-scroll {
-  display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px;
+  display: flex; gap: 14px; overflow-x: auto; overflow-y: clip;
+  padding: 12px 0 12px; margin: -12px 0;
   scroll-behavior: smooth; scrollbar-width: none;
 }
 .nh-scroll::-webkit-scrollbar { display: none; }
@@ -519,6 +522,10 @@ onUnmounted(stopHeroRotation)
 /* ── Cover cards ─────────────────────────────────────────────────────────── */
 .nh-cover-card {
   flex: 0 0 auto; width: 150px; cursor: pointer;
+  transition: transform .3s cubic-bezier(.25,.46,.45,.94);
+}
+.nh-cover-card:hover {
+  transform: translateY(-8px);
 }
 
 .nh-cover-img-wrap {
@@ -532,7 +539,6 @@ onUnmounted(stopHeroRotation)
 }
 
 .nh-cover-card:hover .nh-cover-img-wrap {
-  transform: translateY(-8px);
   border-color: var(--pl);
   box-shadow:
     0 20px 50px rgba(0,0,0,.6),
