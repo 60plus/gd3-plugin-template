@@ -355,7 +355,7 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+/* Fonts loaded by theme system via plugin.py font field — no @import needed */
 
 .nh-lib { display: flex; flex-direction: column; min-height: 100%; padding: 0 28px 48px; }
 

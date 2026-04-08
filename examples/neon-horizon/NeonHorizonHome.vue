@@ -249,15 +249,12 @@ function romAspect(r: EmuRom): string { return r.cover_type === 'box-3D' ? '16/9
 
 /* ── Fetch ───────────────────────────────────────────────────────────────── */
 async function fetchAll() {
-  const [summaryRes, recentRes] = await Promise.allSettled([
-    client.get('/roms/summary'), client.get('/roms/recent', { params: { limit: 24 } })
-  ])
-  if (recentRes.status === 'fulfilled') emuRecent.value = recentRes.value.data as EmuRom[]
-
-  const [libRes, gogRes] = await Promise.allSettled([
-    client.get('/library/games', { params: { limit: '500' } }),
+  const [recentRes, libRes, gogRes] = await Promise.allSettled([
+    client.get('/roms/recent', { params: { limit: 24 } }),
+    client.get('/library/games', { params: { limit: '24', offset: '0' } }),
     isAdmin.value ? client.get('/gog/library/games') : Promise.resolve({ data: [] }),
   ])
+  if (recentRes.status === 'fulfilled') emuRecent.value = recentRes.value.data as EmuRom[]
   if (libRes.status === 'fulfilled')
     libGames.value = (libRes.value.data.items as any[]).map((g: any) => ({ id: g.id, title: g.title, slug: g.slug, source: g.source, cover_path: g.cover_path ?? null, background_path: g.background_path ?? null, genres: g.genres ?? [] }))
   if (gogRes.status === 'fulfilled') {
@@ -472,6 +469,7 @@ onUnmounted(stopHeroRotation)
   flex-direction: column;
   padding: 0 28px;
   margin-top: 36px;
+  overflow: visible;
 }
 
 .nh-recent:last-child {
@@ -513,11 +511,13 @@ onUnmounted(stopHeroRotation)
 
 /* ── Horizontal scroll ───────────────────────────────────────────────────── */
 .nh-scroll {
-  display: flex; gap: 14px; overflow-x: auto; overflow-y: clip;
-  padding: 12px 0 12px; margin: -12px 0;
+  display: flex; gap: 14px;
+  overflow-x: auto;
+  padding-top: 12px; padding-bottom: 12px;
   scroll-behavior: smooth; scrollbar-width: none;
 }
 .nh-scroll::-webkit-scrollbar { display: none; }
+
 
 /* ── Cover cards ─────────────────────────────────────────────────────────── */
 .nh-cover-card {
