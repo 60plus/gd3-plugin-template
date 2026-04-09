@@ -1,40 +1,90 @@
 <template>
   <div class="cp" :style="{ '--sys-color': sysColor, '--bg': '#1e1e2e' }">
 
-    <!-- ═══ SYSTEM VIEW — Colorful Pop exact ═══════════════════════════ -->
+    <!-- ═══ SYSTEM VIEW — Colorful Pop 1:1 ═══════════════════════════ -->
     <template v-if="state === 'systems'">
       <div class="cp-bg" />
 
-      <!-- Right color block (35.9% from left, 61.5% wide, 91% tall) -->
-      <div class="cp-sys-block" :style="{ backgroundColor: sysColor }" />
-
-      <!-- Platform image: centered in right block -->
-      <div class="cp-sys-img-wrap">
-        <transition name="cp-slide" mode="out-in">
-          <img v-if="currentPlatform" :key="currentPlatform.fs_slug" :src="'/platforms/fanart/' + currentPlatform.fs_slug + '.webp'" class="cp-sys-img" @error="(e:any) => e.target.src='/platforms/fanart/_default.webp'" />
-        </transition>
+      <!-- Right color block with artwork background (pos 0.359, size 0.615 x 0.91) -->
+      <div class="cp-sys-block" :style="{ backgroundColor: sysColor + '1a' }">
+        <img v-if="currentPlatform" :src="videoHeroUrl || pluginAsset('artwork/' + currentPlatform.fs_slug + '.webp')" :key="videoHeroUrl || currentPlatform.fs_slug" class="cp-sys-block-art" :class="{ 'cp-sys-block-art--static': !kenBurnsEnabled }" @error="(e:any) => e.target.style.opacity='0'" />
       </div>
 
-      <!-- Year -->
-      <div class="cp-sys-year" :style="{ color: sysColor }">{{ currentPlatform?.release_year_platform || '' }}</div>
-      <!-- Platform name -->
-      <div class="cp-sys-name">{{ currentPlatform?.name || '' }}</div>
-      <!-- Description -->
-      <div class="cp-sys-desc">{{ currentPlatform?.description || '' }}</div>
+      <!-- Pop / Overlay+Video cycle -->
+      <div class="cp-sys-img-wrap">
+        <!-- Pop artwork (default, fades out when overlay active) -->
+        <img
+          v-if="currentPlatform"
+          :src="pluginAsset('pop/' + currentPlatform.fs_slug + '.webp')"
+          class="cp-sys-img cp-sys-img--pop"
+          :class="{ 'cp-sys-img--hidden': showPhase === 'overlay' }"
+        />
+        <!-- Overlay: video UNDER transparent overlay image (TV cutout = alpha) -->
+        <div
+          v-if="currentPlatform"
+          class="cp-sys-overlay-wrap"
+          :class="{ 'cp-sys-overlay--visible': showPhase === 'overlay' }"
+        >
+          <!-- Video positioned exactly in TV cutout -->
+          <video
+            v-if="videoUrl && showPhase === 'overlay'"
+            ref="videoRef"
+            :src="videoUrl"
+            class="cp-sys-video"
+            :style="videoStyle"
+            autoplay
+            playsinline
+            muted
+            @ended="onVideoEnded"
+            @error="onVideoEnded"
+          />
+          <!-- Overlay PNG with transparency ON TOP — acts as mask -->
+          <img
+            :src="pluginAsset('overlay/' + currentPlatform.fs_slug + '.webp')"
+            class="cp-sys-overlay-img"
+          />
+          <!-- Wheel logo centered horizontally on video element -->
+          <div v-if="showPhase === 'overlay' && videoUrl" class="cp-sys-video-wheel" :style="wheelStyle">
+            <img v-if="videoWheelUrl" :src="videoWheelUrl" class="cp-sys-video-wheel-img" />
+            <div v-else-if="videoRomName" class="cp-sys-video-wheel-text">{{ videoRomName }}</div>
+          </div>
+        </div>
+      </div>
 
-      <!-- Bottom: 3 color blocks + icon + counts (like Pop) -->
+      <!-- Year (from metadata JSON) -->
+      <div class="cp-sys-year" :style="{ color: sysColor }">{{ platMeta?.year || '' }}</div>
+
+      <!-- Platform name as SVG logo (from plugin assets) -->
+      <div class="cp-sys-name">
+        <img :key="'logo-'+currentPlatform?.fs_slug" :src="pluginAsset('logos/' + (currentPlatform?.fs_slug||'') + '.svg')" class="cp-sys-name-logo" @error="onNameLogoError" />
+        <span v-if="nameLogoFailed" class="cp-sys-name-text">{{ platMeta?.name || currentPlatform?.name || '' }}</span>
+      </div>
+
+      <!-- Description (from metadata JSON — with translations) -->
+      <div class="cp-sys-desc">{{ platDescription }}</div>
+
+      <!-- Bottom 3 color blocks: icon (dark) | game count (normal) | colored icon (light) -->
       <div class="cp-sys-bottom">
         <div class="cp-sys-bottom-block cp-sys-bottom-block--dark" :style="{ backgroundColor: sysColor }">
-          <img :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-sys-bottom-icon" @error="(e:any) => e.target.style.display='none'" />
+          <!-- White icon from /platforms/icons/ (server) -->
+          <img :key="'wicon-'+currentPlatform?.fs_slug" :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-sys-bottom-icon" />
         </div>
         <div class="cp-sys-bottom-block" :style="{ backgroundColor: sysColor }">
           <div class="cp-sys-bottom-num">{{ currentPlatform?.rom_count || 0 }}</div>
           <div class="cp-sys-bottom-label">GAMES</div>
         </div>
-        <div class="cp-sys-bottom-block cp-sys-bottom-block--light" :style="{ backgroundColor: sysColor }" />
+        <div class="cp-sys-bottom-block cp-sys-bottom-block--light" :style="{ backgroundColor: sysColor }">
+          <!-- Colored icon from plugin assets -->
+          <img :src="pluginAsset('icons/' + (currentPlatform?.fs_slug||'') + '.png')" class="cp-sys-bottom-icon-color" :class="iconAnimEnabled ? 'cp-icon-anim--' + iconAnimStyle : ''" />
+        </div>
       </div>
 
-      <!-- Nav arrows (white boxes, bottom right) -->
+      <!-- System logo SVG (from plugin assets) -->
+      <div class="cp-sys-logo">
+        <img :src="pluginAsset('logos/' + (currentPlatform?.fs_slug||'') + '.svg')" class="cp-sys-logo-img" @error="(e:any) => e.target.style.display='none'" />
+      </div>
+
+      <!-- Nav arrows (inside the color block, not overflowing) -->
       <div class="cp-sys-arrows">
         <button class="cp-sys-arrow" @click="goSys(-1)">▲</button>
         <button class="cp-sys-arrow" @click="goSys(1)">▼</button>
@@ -117,7 +167,20 @@
       <div v-if="menuOpen" class="cp-overlay" @click.self="menuOpen=false">
         <div class="cp-menu">
           <div class="cp-menu-title" :style="{color:sysColor}">SETTINGS</div>
-          <div v-for="(m,i) in menuItems" :key="i" class="cp-menu-row" :class="{focus:menuIdx===i,danger:m.danger}" @click="m.action">{{m.label}}</div>
+          <!-- Tabs -->
+          <div class="cp-menu-tabs">
+            <button class="cp-menu-tab" :class="{active:menuTab==='general'}" @click="menuTab='general';menuIdx=0">General</button>
+            <button class="cp-menu-tab" :class="{active:menuTab==='visuals'}" @click="menuTab='visuals';menuIdx=0">Visuals</button>
+          </div>
+          <!-- General tab -->
+          <template v-if="menuTab==='general'">
+            <div v-for="(m,i) in menuItemsGeneral" :key="'g'+i" class="cp-menu-row" :class="{focus:menuIdx===i,danger:m.danger}" @click="m.action">{{m.label}}</div>
+          </template>
+          <!-- Visuals tab -->
+          <template v-if="menuTab==='visuals'">
+            <div v-for="(m,i) in menuItemsVisuals" :key="'v'+i" class="cp-menu-row" :class="{focus:menuIdx===i}" @click="m.action">{{m.label}}</div>
+          </template>
+          <div class="cp-menu-hint">↑↓ Navigate · ←→ Tabs · A Toggle · B Close</div>
         </div>
       </div>
     </transition>
@@ -153,13 +216,47 @@ interface Platform { id:number; slug:string; fs_slug:string; name:string; rom_co
 interface Rom { id:number; slug:string; title:string; cover_path:string|null; background_path:string|null; wheel_path:string|null; video_path:string|null; release_year:number|null; bezel_path:string|null }
 interface Detail { description:string|null; screenshots:string[]|null; developer:string|null; genres:string[]|null; ss_score:number|null; wheel_path:string|null }
 
-const COLORS: Record<string,string> = {
-  nes:'#c43d41',snes:'#df5142',n64:'#367d3f',gb:'#5a6e7e',gba:'#3f3f95',gbc:'#6b3fa0',
-  nds:'#a0a0a0',genesis:'#c23b2c',megadrive:'#c23b2c',mastersystem:'#bf2020',gamegear:'#2c68b0',
-  saturn:'#5566aa',dreamcast:'#e87d2a',psx:'#2555a0',psp:'#444444',neogeo:'#d4a935',
-  arcade:'#e8b230',atarist:'#3a7bc8',atari2600:'#c85a30',fbneo:'#e8b230',mame:'#e8b230',
-  pc:'#3daee8',windows:'#3daee8',
+// Plugin asset URL helper
+const PLUGIN_ID = 'neon-horizon'
+function pluginAsset(path: string): string {
+  return `/api/plugins/${PLUGIN_ID}/assets/${path}`
 }
+
+// Platform metadata (loaded from plugin's platforms.json)
+const platformsJson = ref<Record<string, any>>({})
+async function loadPlatformsJson() {
+  try {
+    const { data } = await client.get(`/plugins/${PLUGIN_ID}/assets/platforms.json`)
+    platformsJson.value = typeof data === 'object' ? data : {}
+  } catch (e) { console.warn('[CP] Could not load platforms.json:', e) }
+}
+
+const platMeta = computed(() => {
+  const slug = currentPlatform.value?.fs_slug
+  return slug ? platformsJson.value[slug] ?? null : null
+})
+
+// System color from metadata (Colorful Pop's systemColor) — fallback to hardcoded
+const sysColorFromMeta = computed(() => {
+  const c = platMeta.value?.color
+  return c ? '#' + c : null
+})
+
+// Description with browser language support
+const platDescription = computed(() => {
+  const meta = platMeta.value
+  if (!meta) return currentPlatform.value?.description || ''
+  // Try browser language
+  const lang = navigator.language?.replace('-', '_') || 'en'
+  const translations = meta.translations || {}
+  // Try exact match (e.g. pl_PL), then prefix (pl), then English default
+  if (translations[lang]) return translations[lang]
+  const prefix = lang.split('_')[0]
+  for (const key of Object.keys(translations)) {
+    if (key.startsWith(prefix)) return translations[key]
+  }
+  return meta.description || currentPlatform.value?.description || ''
+})
 
 type State = 'systems'|'games-list'|'games-carousel'
 const state = ref<State>('systems')
@@ -177,18 +274,173 @@ const gameListRef = ref<HTMLElement|null>(null)
 const loaded = new Set<string>()
 const launchMode = ref(localStorage.getItem('gd3_couch_launch')||'tab')
 const bezelOn = ref(localStorage.getItem('gd3_couch_bezel')==='on')
+const nameLogoFailed = ref(false)
+function onNameLogoError(e: Event) { (e.target as HTMLImageElement).style.display = 'none'; nameLogoFailed.value = true }
+
+// Menu tabs
+const menuTab = ref<'general'|'visuals'>('general')
+
+// ── Pop / Overlay + Video cycle ──────────────────────────────────────
+const showPhase = ref<'pop'|'overlay'>('pop')
+const videoUrl = ref<string|null>(null)
+const videoHeroUrl = ref<string|null>(null)
+const videoWheelUrl = ref<string|null>(null)  // wheel logo of ROM being played
+const videoRomName = ref<string|null>(null)   // fallback name if no wheel
+const videoRef = ref<HTMLVideoElement|null>(null)
+const videoPosData = ref<Record<string, {x:number,y:number,w:number,h:number}>>({})
+const platformVideos = new Map<string, string[]>()
+
+const videoStyle = computed(() => {
+  const slug = currentPlatform.value?.fs_slug || ''
+  const vp = videoPosData.value[slug]
+  if (!vp) return { left: '45%', top: '30%', width: '30%', height: '25%' }
+  return { left: vp.x + '%', top: vp.y + '%', width: vp.w + '%', height: vp.h + '%' }
+})
+
+// Wheel logo: same left + width as video, centered inside
+const wheelStyle = computed(() => {
+  const slug = currentPlatform.value?.fs_slug || ''
+  const vp = videoPosData.value[slug]
+  if (!vp) return { left: '40%', width: '20%' }
+  return { left: vp.x + '%', width: vp.w + '%' }
+})
+
+async function loadVideoPos() {
+  try {
+    const { data } = await client.get(`/plugins/${PLUGIN_ID}/assets/videopos.json`)
+    videoPosData.value = typeof data === 'object' ? data : {}
+  } catch {}
+}
+const videoCycleEnabled = ref(localStorage.getItem('nh_couch_videocycle') !== 'off')
+const videoVolume = ref(Number(localStorage.getItem('nh_couch_video_vol') ?? 50))
+
+function cycleVolume() {
+  const levels = [0, 25, 50, 75, 100]
+  const i = (levels.indexOf(videoVolume.value) + 1) % levels.length
+  videoVolume.value = levels[i] ?? 50
+  localStorage.setItem('nh_couch_video_vol', String(videoVolume.value))
+  applyVolume()
+}
+function applyVolume() {
+  const el = videoRef.value
+  if (!el) return
+  el.volume = videoVolume.value / 100
+  // Unmute after autoplay started (user already interacted with page via gamepad/keyboard)
+  if (videoVolume.value > 0) {
+    try { el.muted = false } catch { /* autoplay policy */ }
+  } else {
+    el.muted = true
+  }
+}
+let cycleTimer: ReturnType<typeof setTimeout>|null = null
+
+
+interface VideoRom { video_path: string; background_path: string | null; cover_path: string | null; wheel_path: string | null; name: string }
+const platformVideoRoms = new Map<string, VideoRom[]>()
+
+async function fetchPlatformVideoRoms(slug: string): Promise<VideoRom[]> {
+  if (platformVideoRoms.has(slug)) return platformVideoRoms.get(slug)!
+  try {
+    const { data } = await client.get('/roms', { params: { platform_slug: slug, limit: 500, offset: 0 } })
+    const items = data.items ?? (Array.isArray(data) ? data : [])
+    const vr = items.filter((r: any) => r.video_path).map((r: any) => ({
+      video_path: r.video_path as string,
+      background_path: r.background_path as string | null,
+      cover_path: r.cover_path as string | null,
+      wheel_path: r.wheel_path as string | null,
+      name: (r.name || r.fs_name_no_ext || '') as string,
+    }))
+    platformVideoRoms.set(slug, vr)
+    return vr
+  } catch { return [] }
+}
+
+function stopCycle() {
+  if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null }
+  showPhase.value = 'pop'
+  videoUrl.value = null
+  videoHeroUrl.value = null
+  videoWheelUrl.value = null
+  videoRomName.value = null
+}
+
+function startCycle() {
+  stopCycle()
+  if (!videoCycleEnabled.value || !currentPlatform.value) return
+  // Wait 8s then show overlay + video
+  cycleTimer = setTimeout(async () => {
+    const apiSlug = currentPlatform.value?.slug
+    if (!apiSlug) return
+    const vRoms = await fetchPlatformVideoRoms(apiSlug)
+    if (vRoms.length === 0) { startCycle(); return }
+    // Pick random (different from last if possible)
+    const pool = vRoms.length > 1 ? vRoms.filter(v => v.video_path !== videoUrl.value) : vRoms
+    const picked = pool[Math.floor(Math.random() * pool.length)]
+    videoUrl.value = picked.video_path
+    videoHeroUrl.value = picked.background_path || picked.cover_path
+    videoWheelUrl.value = picked.wheel_path
+    videoRomName.value = picked.name
+    showPhase.value = 'overlay'
+    // Timeout: if video doesn't end in 20s, go back to pop
+    cycleTimer = setTimeout(() => { onVideoEnded() }, 20000)
+  }, 8000)
+}
+
+function onVideoEnded() {
+  showPhase.value = 'pop'
+  videoUrl.value = null
+  videoHeroUrl.value = null
+  videoWheelUrl.value = null
+  videoRomName.value = null
+  if (cycleTimer) clearTimeout(cycleTimer)
+  startCycle()
+}
+
+function toggleVideoCycle() {
+  videoCycleEnabled.value = !videoCycleEnabled.value
+  localStorage.setItem('nh_couch_videocycle', videoCycleEnabled.value ? 'on' : 'off')
+  if (videoCycleEnabled.value) startCycle(); else stopCycle()
+}
+
+// NH Couch visual settings (persisted to localStorage)
+const kenBurnsEnabled = ref(localStorage.getItem('nh_couch_kenburns') !== 'off')
+const iconAnimEnabled = ref(localStorage.getItem('nh_couch_iconanim') !== 'off')
+const iconAnimStyle = ref(localStorage.getItem('nh_couch_iconanim_style') || 'shake')
+
+function toggleKenBurns() {
+  kenBurnsEnabled.value = !kenBurnsEnabled.value
+  localStorage.setItem('nh_couch_kenburns', kenBurnsEnabled.value ? 'on' : 'off')
+}
+function toggleIconAnim() {
+  iconAnimEnabled.value = !iconAnimEnabled.value
+  localStorage.setItem('nh_couch_iconanim', iconAnimEnabled.value ? 'on' : 'off')
+}
+function cycleIconAnimStyle() {
+  const styles = ['shake', 'spin', 'pop', 'bounce']
+  const i = (styles.indexOf(iconAnimStyle.value) + 1) % styles.length
+  iconAnimStyle.value = styles[i]
+  localStorage.setItem('nh_couch_iconanim_style', iconAnimStyle.value)
+}
 
 const currentPlatform = computed(()=>platforms.value[sysIdx.value]??null)
 const selectedRom = computed(()=>roms.value[romIdx.value]??null)
-const sysColor = computed(()=>COLORS[currentPlatform.value?.fs_slug||'']||'#4466aa')
+const sysColor = computed(()=>sysColorFromMeta.value||'#4466aa')
 
-const menuItems = computed(()=>[
+const menuItemsGeneral = computed(()=>[
   {label:`View: ${gameView.value}`,action:()=>{gameView.value=gameView.value==='list'?'carousel':'list';localStorage.setItem('gd3_couch_view',gameView.value)}},
   {label:`Launch: ${launchMode.value}`,action:()=>{const m=['tab','window','fullscreen'];launchMode.value=m[(m.indexOf(launchMode.value)+1)%3];localStorage.setItem('gd3_couch_launch',launchMode.value)}},
   {label:`Bezel: ${bezelOn.value?'ON':'OFF'}`,action:()=>{bezelOn.value=!bezelOn.value;localStorage.setItem('gd3_couch_bezel',bezelOn.value?'on':'off')}},
   {label:'Resume',action:()=>{menuOpen.value=false}},
   {label:'Exit',action:()=>doExit(),danger:true},
 ])
+const menuItemsVisuals = computed(()=>[
+  {label:`Ken Burns Animation: ${kenBurnsEnabled.value?'ON':'OFF'}`,action:toggleKenBurns},
+  {label:`Video Cycle: ${videoCycleEnabled.value?'ON':'OFF'}`,action:toggleVideoCycle},
+  {label:`Video Volume: ${videoVolume.value}%`,action:cycleVolume},
+  {label:`Icon Animation: ${iconAnimEnabled.value?'ON':'OFF'}`,action:toggleIconAnim},
+  {label:`Icon Style: ${iconAnimStyle.value}`,action:cycleIconAnimStyle},
+])
+const activeMenuItems = computed(()=>menuTab.value==='general'?menuItemsGeneral.value:menuItemsVisuals.value)
 
 async function fetchPlatforms(){
   try{
@@ -218,8 +470,8 @@ async function loadRom(rom:Rom){
 }
 
 function goSys(dir:number){const n=sysIdx.value+dir;if(n>=0&&n<platforms.value.length){sysIdx.value=n;loadDetail(n)}}
-function selectPlatform(){state.value=gameView.value==='list'?'games-list':'games-carousel';fetchRoms()}
-function backToSystems(){state.value='systems';roms.value=[];detail.value=null}
+function selectPlatform(){stopCycle();state.value=gameView.value==='list'?'games-list':'games-carousel';fetchRoms()}
+function backToSystems(){state.value='systems';roms.value=[];detail.value=null;startCycle()}
 function doExit(){router.push('/')}
 function launchGame(){
   const rom=selectedRom.value,plat=currentPlatform.value;if(!rom||!plat)return
@@ -233,22 +485,23 @@ function launchGame(){
   couchNavPaused.value=true;window.addEventListener('focus',()=>{couchNavPaused.value=false},{once:true})
 }
 
-watch(sysIdx,(i)=>loadDetail(i))
+watch(sysIdx,(i)=>{loadDetail(i);nameLogoFailed.value=false;startCycle()})
+watch(videoUrl,()=>{ nextTick(()=>applyVolume()) })
 watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})})})
 watch(gameView,(v)=>{if(state.value.startsWith('games-'))state.value=v==='list'?'games-list':'games-carousel'})
 
 useCouchNav({
   up:()=>{if(menuOpen.value){menuIdx.value=Math.max(0,menuIdx.value-1);return}if(exitOpen.value){exitIdx.value=0;return}if(state.value==='systems')goSys(-1);if(state.value==='games-list'&&romIdx.value>0)romIdx.value--},
-  down:()=>{if(menuOpen.value){menuIdx.value=Math.min(menuItems.value.length-1,menuIdx.value+1);return}if(exitOpen.value){exitIdx.value=1;return}if(state.value==='systems')goSys(1);if(state.value==='games-list'&&romIdx.value<roms.value.length-1)romIdx.value++},
-  left:()=>{if(shotIdx.value>0){shotIdx.value--;return}if(state.value==='games-carousel'&&romIdx.value>0)romIdx.value--},
-  right:()=>{if(shotIdx.value>=0&&detail.value?.screenshots&&shotIdx.value<detail.value.screenshots.length-1){shotIdx.value++;return}if(state.value==='games-carousel'&&romIdx.value<roms.value.length-1)romIdx.value++},
-  confirm:()=>{if(menuOpen.value){menuItems.value[menuIdx.value]?.action();return}if(exitOpen.value){exitIdx.value===1?doExit():(exitOpen.value=false);return}if(state.value==='systems')selectPlatform();else launchGame()},
+  down:()=>{if(menuOpen.value){menuIdx.value=Math.min(activeMenuItems.value.length-1,menuIdx.value+1);return}if(exitOpen.value){exitIdx.value=1;return}if(state.value==='systems')goSys(1);if(state.value==='games-list'&&romIdx.value<roms.value.length-1)romIdx.value++},
+  left:()=>{if(menuOpen.value){menuTab.value=menuTab.value==='visuals'?'general':'visuals';menuIdx.value=0;return}if(shotIdx.value>0){shotIdx.value--;return}if(state.value==='games-carousel'&&romIdx.value>0)romIdx.value--},
+  right:()=>{if(menuOpen.value){menuTab.value=menuTab.value==='general'?'visuals':'general';menuIdx.value=0;return}if(shotIdx.value>=0&&detail.value?.screenshots&&shotIdx.value<detail.value.screenshots.length-1){shotIdx.value++;return}if(state.value==='games-carousel'&&romIdx.value<roms.value.length-1)romIdx.value++},
+  confirm:()=>{if(menuOpen.value){activeMenuItems.value[menuIdx.value]?.action();return}if(exitOpen.value){exitIdx.value===1?doExit():(exitOpen.value=false);return}if(state.value==='systems')selectPlatform();else launchGame()},
   back:()=>{if(shotIdx.value>=0){shotIdx.value=-1;return}if(menuOpen.value){menuOpen.value=false;return}if(exitOpen.value){exitOpen.value=false;return}if(state.value.startsWith('games-'))backToSystems();else exitOpen.value=true},
   menu:()=>{if(!exitOpen.value){menuOpen.value=!menuOpen.value;menuIdx.value=0}},
   x:()=>{if(detail.value?.screenshots?.length&&state.value.startsWith('games-'))shotIdx.value=0},
 })
 
-onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});fetchPlatforms()})
+onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});loadPlatformsJson();loadVideoPos();fetchPlatforms().then(()=>startCycle())})
 </script>
 
 <style scoped>
@@ -259,15 +512,37 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});fetc
 
 /* ═══ SYSTEM VIEW ════════════════════════════════════════════════════ */
 /* Right color block: pos 35.9% left, 4.5% top, 61.5% wide, 91% tall */
-.cp-sys-block{position:absolute;left:35.9%;top:4.5%;width:61.5%;height:91%;z-index:2}
-/* Platform image centered in color block */
-.cp-sys-img-wrap{position:absolute;left:36.7%;top:4.5%;width:60%;height:91%;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.cp-sys-img{max-width:100%;max-height:100%;object-fit:contain}
+.cp-sys-block{position:absolute;left:35.9%;top:4.5%;width:61.5%;height:91%;z-index:2;overflow:hidden;background-color:color-mix(in srgb, var(--sys-color) 10%, transparent)}
+.cp-sys-block-art{position:absolute;inset:-5%;width:110%;height:110%;object-fit:cover;opacity:.35;animation:cp-kenburns 30s ease-in-out infinite alternate}
+.cp-sys-block-art--static{animation:none!important;inset:0;width:100%;height:100%}
+@keyframes cp-kenburns{0%{transform:scale(1) translate(0,0)}50%{transform:scale(1.08) translate(-2%,-1%)}100%{transform:scale(1.04) translate(1%,2%)}}
+/* Platform image area — contains pop + overlay with crossfade */
+.cp-sys-img-wrap{position:absolute;left:36.7%;top:4.5%;width:60%;height:91%;z-index:5;overflow:hidden}
+
+/* Pop artwork */
+.cp-sys-img--pop{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .6s ease;z-index:2}
+.cp-sys-img--hidden{opacity:0}
+
+/* Overlay: video under transparent overlay image */
+.cp-sys-overlay-wrap{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s ease;z-index:3}
+.cp-sys-overlay--visible{opacity:1}
+.cp-sys-overlay-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none}
+
+/* Video positioned in TV cutout — coordinates from videopos.json (overlay-relative) */
+.cp-sys-video{position:absolute;object-fit:cover;z-index:1}
+
+/* Wheel logo of playing ROM — bottom right of overlay */
+.cp-sys-video-wheel{position:absolute;bottom:8%;z-index:3;display:flex;justify-content:center;opacity:0;animation:cp-wheel-in .6s ease .5s forwards}
+.cp-sys-video-wheel-img{max-width:100%;max-height:8vh;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7))}
+.cp-sys-video-wheel-text{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.5vh,24px);font-weight:900;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+@keyframes cp-wheel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
 /* Year: 2.6%, 15% */
 .cp-sys-year{position:absolute;left:2.6%;top:15%;z-index:10;font-size:clamp(14px,3vh,28px);font-weight:300;letter-spacing:.03em}
-/* Name: 2.6%, 22.5% */
-.cp-sys-name{position:absolute;left:2.6%;top:22.5%;width:30.7%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vh,52px);font-weight:900;line-height:1.1}
+/* Name: 2.6%, 22.5% — shows SVG logo, fallback to text */
+.cp-sys-name{position:absolute;left:2.6%;top:22.5%;width:30.7%;height:27.5%;z-index:10;display:flex;align-items:flex-start}
+.cp-sys-name-logo{max-width:100%;max-height:100%;object-fit:contain;filter:brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.cp-sys-name-text{font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vh,52px);font-weight:900;line-height:1.1}
 /* Desc: 2.6%, 44% */
 .cp-sys-desc{position:absolute;left:2.6%;top:44%;width:30.7%;height:22%;z-index:10;font-size:clamp(11px,1.6vh,15px);color:rgba(255,255,255,.55);line-height:1.5;overflow-y:auto;scrollbar-width:none}
 .cp-sys-desc::-webkit-scrollbar{display:none}
@@ -277,12 +552,13 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});fetc
 .cp-sys-bottom-block{width:10.4vw;height:18.6vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .cp-sys-bottom-block--dark{filter:brightness(.8)}
 .cp-sys-bottom-block--light{filter:brightness(1.2)}
-.cp-sys-bottom-icon{width:50%;height:auto;max-height:60%;object-fit:contain;filter:brightness(0) invert(1)}
+.cp-sys-bottom-icon{width:75%;height:auto;max-height:70%;object-fit:contain}
+.cp-sys-bottom-icon-color{width:50%;height:auto;max-height:60%;object-fit:contain}
 .cp-sys-bottom-num{font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vh,32px);font-weight:700}
 .cp-sys-bottom-label{font-size:clamp(9px,1.1vh,12px);font-weight:700;text-transform:uppercase;letter-spacing:.12em}
 
-/* Nav arrows: bottom right, white boxes */
-.cp-sys-arrows{position:absolute;right:2.5%;bottom:7%;z-index:10;display:flex;gap:6px}
+/* Nav arrows: inside right color block, bottom-right corner */
+.cp-sys-arrows{position:absolute;right:4%;bottom:8%;z-index:10;display:flex;gap:6px}
 .cp-sys-arrow{width:40px;height:40px;background:rgba(255,255,255,.9);color:#333;border:none;border-radius:4px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .cp-sys-arrow:hover{background:#fff}
 
@@ -332,4 +608,22 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});fetc
 
 .cp-shot-img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:6px}
 .cp-shot-ctr{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:'Orbitron';font-size:12px;color:rgba(255,255,255,.4)}
+
+/* ═══ MENU TABS ══════════════════════════════════════════════════════ */
+.cp-menu-tabs{display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.cp-menu-tab{flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.35);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.cp-menu-tab:hover{color:rgba(255,255,255,.6)}
+.cp-menu-tab.active{color:var(--sys-color,#4466aa);border-bottom-color:var(--sys-color,#4466aa)}
+
+/* ═══ ICON ANIMATIONS ════════════════════════════════════════════════ */
+.cp-icon-anim--shake{animation:cp-shake 8s ease-in-out infinite}
+.cp-icon-anim--spin{animation:cp-spin 8s ease-in-out infinite}
+.cp-icon-anim--pop{animation:cp-pop 8s ease-in-out infinite}
+.cp-icon-anim--bounce{animation:cp-bounce-icon 8s ease-in-out infinite}
+
+/* Sporadic = long pause, short burst. 8s total, action only in first 15% */
+@keyframes cp-shake{0%,100%{transform:rotate(0)}2%{transform:rotate(-12deg)}4%{transform:rotate(10deg)}6%{transform:rotate(-8deg)}8%{transform:rotate(5deg)}10%{transform:rotate(0)}}
+@keyframes cp-spin{0%{transform:rotate(0)}12%{transform:rotate(360deg)}100%{transform:rotate(360deg)}}
+@keyframes cp-pop{0%,100%{transform:scale(1)}3%{transform:scale(1.3)}6%{transform:scale(0.85)}9%{transform:scale(1.15)}12%{transform:scale(1)}}
+@keyframes cp-bounce-icon{0%,100%{transform:translateY(0)}4%{transform:translateY(-20%)}8%{transform:translateY(0)}11%{transform:translateY(-10%)}14%{transform:translateY(0)}}
 </style>
