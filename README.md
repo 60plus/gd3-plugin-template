@@ -243,14 +243,22 @@ A complete theme plugin inspired by [Colorful Pop](https://github.com/RobZombie9
 - Alphabet quick-nav sidebar
 
 **Couch Mode (Colorful Pop style):**
-- Platform carousel with pop character artwork
-- Overlay console setups with real game video playing inside TV cutouts (video positions computed from EmulationStation XML)
-- Pop → overlay+video → pop automatic cycling
-- Game list (text list + big screenshot) and carousel (full-screen fanart) views
+- Platform carousel with pop character artwork and console overlay with TV cutout
+- Real game video playing inside TV cutouts — positions computed from EmulationStation XML per platform
+- Pop → overlay+video → pop automatic cycling with configurable timing
+- Game list view: text list + cover + console overlay with live game video + full game info panel (rating, genres, developer/publisher logos from ScreenScraper, description, HLTB times)
+- Game carousel view: full-screen fanart with game info overlay
+- **Favorites system**: Y button (gamepad) or F key to toggle — gold star indicator, per-platform favorite count, dedicated favorites list accessible via ← from platform selector
+- **Recently Played**: last 50 games launched, accessible via → from platform selector
+- Both Favorites and Recently Played support list and carousel views with mixed cover aspect ratios
 - Platform descriptions in 15 languages (auto-detected from browser)
 - Per-platform system colors from EmulationStation metadata
-- Wheel logo display during video playback
-- Visual settings: Ken Burns animation, video cycle, video volume, icon animations
+- Wheel logo display during video playback (centered on TV)
+- Developer/publisher logos from ScreenScraper API with text fallback
+- Glass morphism panels with skin-colored tinting
+- NH ambient background (orbs, particles, grid, scanlines) — same as main theme
+- Visual settings (Start > Visuals): Ken Burns animation, video cycle, video volume, icon animations (shake/spin/pop/bounce)
+- Gamepad button icons in help bar (D-pad, A, B, X, Y, Start)
 
 **Theme Features:**
 - 8 color skins (Cyan Flux, Violet Surge, Magenta Pulse, Gold Circuit, Cyber, Plasma, Sunset, Aurora)
@@ -280,6 +288,7 @@ examples/neon-horizon/
     artwork/               # Modern console artwork (Ken Burns background)
     icons/                 # Colored platform icons
     logos/                 # SVG platform name logos
+    images/                # UI icons (games count, favorite badge)
     platforms.json         # Platform metadata (names, colors, descriptions, 15 languages)
     videopos.json          # Video positions inside TV cutouts (computed from ES-DE XML)
 ```
