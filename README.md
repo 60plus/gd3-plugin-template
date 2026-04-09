@@ -304,13 +304,15 @@ Translates game descriptions between 26 languages using Google Translate.
 gd3-plugin-template/
   templates/
     metadata-scraper/   # starter template for metadata plugins
-    theme/              # starter template for theme plugins
+    theme/              # starter template for theme plugins (plugin.py, CSS, JS, JSON)
+    widget/             # starter template for widget plugins
   examples/
-    neon-horizon/       # complete theme (layouts, couch mode, 95 platform assets)
-    ppe-metadata/       # complete metadata scraper
-    gd3-translator/     # complete translator
+    neon-horizon/       # complete theme (Vue layouts, couch mode, CSS, JS, 95 platform assets)
+    ppe-metadata/       # complete metadata scraper (PPE.pl)
+    gd3-translator/     # complete translator (26 languages)
   docs/
-    HOOKS.md            # detailed hook reference
+    HOOKS.md            # detailed hook reference (all specs, window.__GD__ API, Vue compilation)
+  build.sh              # ZIP packaging helper
 ```
 
 ---

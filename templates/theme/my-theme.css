@@ -1,0 +1,22 @@
+/* My Theme CSS overrides */
+/* Use [data-theme="my-theme"] selector prefix for all rules */
+/* See examples/neon-horizon/neon-horizon.css for a complete example */
+
+[data-theme="my-theme"] {
+  /* Skin colors — define per skin in [data-skin="..."] blocks */
+}
+
+[data-skin="blue"] {
+  --bg: #0a0618;
+  --text: #e0e6ff;
+  --pl: #2563eb;
+  --pl2: #60a5fa;
+}
+
+[data-skin="red"] {
+  --bg: #0a0618;
+  --text: #e0e6ff;
+  --pl: #dc2626;
+  --pl2: #f87171;
+}
+

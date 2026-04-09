@@ -6,6 +6,7 @@
   "description": "A custom theme for GamesDownloader",
   "type": "theme",
   "entry": "plugin.py",
+  "has_logo": true,
   "requires": [],
   "min_gd_version": "3.0.0",
   "config_schema": {}
