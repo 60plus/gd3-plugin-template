@@ -238,7 +238,8 @@ A complete theme plugin inspired by [Colorful Pop](https://github.com/RobZombie9
 **Main Layout:**
 - Netflix-style home page with hero banner and recently added rows
 - Library tabs in navbar (GOG, Games, Emulation)
-- Steam Big Picture style library views (16:9 landscape cards)
+- Steam Big Picture style library views (16:9 landscape cards with hero background + cover thumbnail)
+- Cover thumbnails scale proportionally with card size (XL=100%, L=80.8%, M=61.5%, S=46.2%)
 - Global search across all libraries
 - Alphabet quick-nav sidebar
 
