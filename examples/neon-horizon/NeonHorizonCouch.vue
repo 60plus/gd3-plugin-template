@@ -46,6 +46,7 @@
             @ended="onVideoEnded"
             @error="onVideoEnded"
           />
+          <div v-if="nhScanlines && videoUrl && showPhase === 'overlay'" class="cp-sys-video-scanlines" :style="videoStyle" />
           <!-- Overlay PNG with transparency ON TOP — acts as mask -->
           <img
             :src="pluginAsset('overlay/' + currentPlatform.fs_slug + '.webp')"
@@ -130,10 +131,13 @@
         ><span v-if="isFavorite(rom.id)" class="cp-gl-fav-star">★</span>{{ rom.title }}</div>
       </div>
 
-      <!-- Big image: screenshot/video/cover (center-right, 60% x 91%) -->
-      <!-- Cover (center-top) -->
-      <div class="cp-gl-bigimage">
-        <img v-if="selectedRom?.cover_path" :src="selectedRom.cover_path" class="cp-gl-bigimage-img" />
+      <!-- Hero background with cover inside (right of panel) -->
+      <div class="cp-gl-hero" v-if="selectedRom">
+        <img :src="selectedRom.background_path || selectedRom.cover_path || ''" class="cp-gl-hero-img" :class="{ 'cp-gl-hero-img--static': !kenBurnsEnabled }" />
+        <div class="cp-gl-hero-fade" />
+        <div class="cp-gl-bigimage">
+          <img v-if="selectedRom?.cover_path" :src="selectedRom.cover_path" class="cp-gl-bigimage-img" />
+        </div>
       </div>
 
       <!-- Overlay + video (right-top — console with game video in TV) -->
@@ -148,6 +152,7 @@
           autoplay muted playsinline loop
           @canplay="onGlVideoCanPlay"
         />
+        <div v-if="nhScanlines && selectedRom?.video_path" class="cp-sys-video-scanlines" :style="videoStyle" />
         <img :src="pluginAsset('overlay/' + currentPlatform.fs_slug + '.webp')" class="cp-gl-overlay-img" />
       </div>
 
@@ -336,6 +341,25 @@ function saveRecent() { localStorage.setItem('nh_couch_recent', JSON.stringify(r
 
 function isFavorite(romId: number): boolean { return favorites.value.some(f => f.id === romId) }
 function fmtHltb(s: number): string { const h = Math.floor(s/3600); const m = Math.round((s%3600)/60); return h > 0 ? `${h}h ${m}m` : `${m}m` }
+
+// Auto-scroll description if overflowing
+let _descScrollTimer: ReturnType<typeof setInterval>|null = null
+function startDescAutoScroll() {
+  stopDescAutoScroll()
+  _descScrollTimer = setTimeout(() => {
+    const el = document.querySelector('.cp-gl-info-desc') as HTMLElement
+    if (!el || el.scrollHeight <= el.clientHeight) return
+    let dir = 1
+    _descScrollTimer = setInterval(() => {
+      el.scrollTop += dir
+      if (el.scrollTop >= el.scrollHeight - el.clientHeight) dir = -1
+      if (el.scrollTop <= 0) dir = 1
+    }, 50) as any
+  }, 2000)
+}
+function stopDescAutoScroll() {
+  if (_descScrollTimer) { clearTimeout(_descScrollTimer); clearInterval(_descScrollTimer); _descScrollTimer = null }
+}
 
 const platformFavCount = computed(() => {
   const fs = currentPlatform.value?.fs_slug
@@ -681,7 +705,8 @@ function launchGame(){
 
 watch(sysIdx,(i)=>{loadDetail(i);nameLogoFailed.value=false;startCycle()})
 watch(videoUrl,(url)=>{ if(url) nextTick(()=>{ const el=videoRef.value; if(el){ el.play().then(()=>{ setTimeout(()=>applyVolume(),500) }).catch(()=>{}) } }) })
-watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})})})
+watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;stopDescAutoScroll();if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})})})
+watch(detail,()=>{if(detail.value?.description)nextTick(()=>startDescAutoScroll())})
 watch(gameView,(v)=>{if(state.value.startsWith('games-'))state.value=v==='list'?'games-list':'games-carousel'})
 
 useCouchNav({
@@ -708,7 +733,7 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 @keyframes cp-nh-float{0%{transform:translateY(0) scale(0);opacity:0}10%{opacity:.6}50%{opacity:.3}90%{opacity:.1}100%{transform:translateY(-110vh) scale(1.5);opacity:0}}
 
 /* NH grid overlay */
-.cp-nh-grid{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.15) 1px,transparent 1px);background-size:48px 48px;mix-blend-mode:screen}
+.cp-nh-grid{position:fixed;inset:0;z-index:99;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.15) 1px,transparent 1px);background-size:48px 48px;mix-blend-mode:screen}
 
 /* NH scanlines */
 .cp-nh-scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);mix-blend-mode:multiply}
@@ -735,6 +760,9 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 
 /* Video positioned in TV cutout — coordinates from videopos.json (overlay-relative) */
 .cp-sys-video{position:absolute;object-fit:cover;z-index:1}
+
+/* Scanlines on video only (not on overlay/TV) */
+.cp-sys-video-scanlines{position:absolute;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px)}
 
 /* Wheel logo of playing ROM — bottom right of overlay */
 .cp-sys-video-wheel{position:absolute;bottom:8%;z-index:3;display:flex;justify-content:center;opacity:0;animation:cp-wheel-in .6s ease .5s forwards}
@@ -787,8 +815,14 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 .cp-sys-special-title{font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vh,28px);font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 
 /* Big image on right (like list-video in Pop: screenshot centered in color block area) */
-.cp-gl-bigimage{position:absolute;left:32%;top:4%;width:20%;height:55%;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.cp-gl-bigimage-img{max-width:95%;max-height:95%;object-fit:contain;border-radius:4px}
+/* Hero background behind cover + overlay area */
+.cp-gl-hero{position:absolute;left:30.6%;top:4.5%;right:0;height:91%;z-index:1;overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 5%,black 95%,transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 5%,black 95%,transparent 100%)}
+.cp-gl-hero-img{position:absolute;inset:-5%;width:110%;height:110%;object-fit:cover;opacity:.25;filter:brightness(.5) saturate(1.2);animation:cp-kenburns 30s ease-in-out infinite alternate}
+.cp-gl-hero-img--static{animation:none;inset:0;width:100%;height:100%}
+.cp-gl-hero-fade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,var(--bg,#05050f) 100%);z-index:1}
+
+.cp-gl-bigimage{position:absolute;left:3%;top:0;width:28%;height:75%;z-index:2;display:flex;align-items:flex-start;justify-content:center;padding-top:3%;overflow:hidden}
+.cp-gl-bigimage-img{max-width:95%;max-height:95%;object-fit:contain;border-radius:4px;box-shadow:0 0 15px var(--sys-color),0 4px 16px rgba(0,0,0,.4)}
 
 /* Overlay + video on right side of game list */
 /* IDENTICAL proportions to system view cp-sys-img-wrap (60% x 91%) */
@@ -809,7 +843,7 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 .cp-gl-info-company{display:inline-flex;align-items:center;gap:8px}
 .cp-gl-info-company-logo{height:clamp(22px,3.5vh,36px);width:auto;max-width:120px;object-fit:contain;filter:brightness(0) invert(1);opacity:.7}
 .cp-gl-info-sep{color:rgba(255,255,255,.25)}
-.cp-gl-info-desc{font-size:clamp(13px,1.7vh,17px);color:rgba(255,255,255,.4);line-height:1.6;max-height:14vh;overflow-y:auto;scrollbar-width:none}
+.cp-gl-info-desc{font-size:clamp(13px,1.7vh,17px);color:rgba(255,255,255,.55);line-height:1.6;max-height:13vh;overflow-y:auto;scrollbar-width:none;padding:12px 16px;border-radius:6px;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.2));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05)}
 .cp-gl-info-desc::-webkit-scrollbar{display:none}
 .cp-gl-info-hltb{display:flex;gap:16px;font-size:clamp(13px,1.6vh,16px);color:rgba(255,255,255,.4)}
 
