@@ -1,701 +1,335 @@
 <template>
-  <div class="ncouch" :style="rootStyle" @click.self="handleRootClick">
+  <div class="cp" :style="{ '--sys-color': sysColor, '--bg': '#1e1e2e' }">
 
-    <!-- ════════════════════════════════════════════════════════════════════
-         SYSTEM VIEW — Colorful Pop style platform carousel
-         ════════════════════════════════════════════════════════════════════ -->
+    <!-- ═══ SYSTEM VIEW — Colorful Pop exact ═══════════════════════════ -->
     <template v-if="state === 'systems'">
-      <!-- Background: platform fanart (blurred) -->
-      <div class="nc-sys-bg">
-        <transition name="nc-crossfade" mode="out-in">
-          <img
-            v-if="currentPlatform"
-            :key="currentPlatform.fs_slug"
-            :src="'/platforms/fanart/' + currentPlatform.fs_slug + '.webp'"
-            class="nc-sys-bg-img"
-            @error="(e:any) => e.target.style.opacity='0'"
-          />
+      <div class="cp-bg" />
+
+      <!-- Right color block (35.9% from left, 61.5% wide, 91% tall) -->
+      <div class="cp-sys-block" :style="{ backgroundColor: sysColor }" />
+
+      <!-- Platform image: centered in right block -->
+      <div class="cp-sys-img-wrap">
+        <transition name="cp-slide" mode="out-in">
+          <img v-if="currentPlatform" :key="currentPlatform.fs_slug" :src="'/platforms/fanart/' + currentPlatform.fs_slug + '.webp'" class="cp-sys-img" @error="(e:any) => e.target.src='/platforms/fanart/_default.webp'" />
         </transition>
       </div>
 
-      <!-- Color blocks (3 brightness variants of systemColor) -->
-      <div class="nc-sys-color-block" :style="colorBlockStyle" />
+      <!-- Year -->
+      <div class="cp-sys-year" :style="{ color: sysColor }">{{ currentPlatform?.release_year_platform || '' }}</div>
+      <!-- Platform name -->
+      <div class="cp-sys-name">{{ currentPlatform?.name || '' }}</div>
+      <!-- Description -->
+      <div class="cp-sys-desc">{{ currentPlatform?.description || '' }}</div>
 
-      <!-- Left info panel -->
-      <div class="nc-sys-info">
-        <div class="nc-sys-year" :style="{ color: sysColor }">{{ currentPlatform?.release_year_platform || '' }}</div>
-        <div class="nc-sys-name">{{ currentPlatform?.name || '' }}</div>
-        <div class="nc-sys-desc">{{ currentPlatform?.description || '' }}</div>
-        <div class="nc-sys-meta">
-          <div class="nc-sys-logo-wrap">
-            <img
-              v-if="currentPlatform"
-              :src="'/platforms/names/' + currentPlatform.fs_slug + '.svg'"
-              class="nc-sys-logo"
-              @error="(e:any) => e.target.style.display='none'"
-            />
-          </div>
-          <div class="nc-sys-counts" :style="{ color: sysColor }">
-            <span class="nc-sys-count-ico">🎮</span>
-            <span>{{ currentPlatform?.rom_count || 0 }} games</span>
-          </div>
+      <!-- Bottom: 3 color blocks + icon + counts (like Pop) -->
+      <div class="cp-sys-bottom">
+        <div class="cp-sys-bottom-block cp-sys-bottom-block--dark" :style="{ backgroundColor: sysColor }">
+          <img :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-sys-bottom-icon" @error="(e:any) => e.target.style.display='none'" />
         </div>
+        <div class="cp-sys-bottom-block" :style="{ backgroundColor: sysColor }">
+          <div class="cp-sys-bottom-num">{{ currentPlatform?.rom_count || 0 }}</div>
+          <div class="cp-sys-bottom-label">GAMES</div>
+        </div>
+        <div class="cp-sys-bottom-block cp-sys-bottom-block--light" :style="{ backgroundColor: sysColor }" />
       </div>
 
-      <!-- Vertical carousel (right side) -->
-      <div class="nc-sys-carousel">
-        <div
-          v-for="(p, i) in visiblePlatforms"
-          :key="p.fs_slug"
-          class="nc-sys-card"
-          :class="{ active: i === 1, prev: i === 0, next: i === 2 }"
-          @click="i === 1 ? selectPlatform() : goSystem(i < 1 ? -1 : 1)"
-        >
-          <img
-            :src="'/platforms/fanart/' + p.fs_slug + '.webp'"
-            class="nc-sys-card-img"
-            @error="(e:any) => e.target.style.opacity='0'"
-          />
-          <div class="nc-sys-card-overlay" />
-          <div class="nc-sys-card-content">
-            <img :src="'/platforms/icons/' + p.fs_slug + '.png'" class="nc-sys-card-icon" @error="(e:any) => e.target.style.display='none'" />
-            <img :src="'/platforms/names/' + p.fs_slug + '.svg'" class="nc-sys-card-logo" @error="(e:any) => { e.target.style.display='none' }" />
-            <div class="nc-sys-card-name">{{ p.name }}</div>
-          </div>
-        </div>
+      <!-- Nav arrows (white boxes, bottom right) -->
+      <div class="cp-sys-arrows">
+        <button class="cp-sys-arrow" @click="goSys(-1)">▲</button>
+        <button class="cp-sys-arrow" @click="goSys(1)">▼</button>
       </div>
 
-      <!-- Scroll indicator -->
-      <div class="nc-sys-scroll-hint">▲▼</div>
-
-      <!-- Bottom help bar -->
-      <div class="nc-help">
-        <span><kbd>←→</kbd> Navigate</span>
-        <span><kbd>A</kbd> Select</span>
-        <span><kbd>Start</kbd> Menu</span>
-        <span><kbd>B</kbd> Exit</span>
+      <div class="cp-help">
+        <span>↑↓ Navigate</span>
+        <span>A Select</span>
+        <span>Start Menu</span>
+        <span>B Back</span>
       </div>
     </template>
 
-    <!-- ════════════════════════════════════════════════════════════════════
-         GAME LIST VIEW — detailed list + showcase
-         ════════════════════════════════════════════════════════════════════ -->
+    <!-- ═══ GAME LIST — list-video (Pop style: text list + big image) ══ -->
     <template v-if="state === 'games-list'">
-      <!-- Background panel -->
-      <div class="nc-gl-bg" :style="{ backgroundColor: sysColorDim }" />
+      <div class="cp-bg" />
+      <!-- Colored panel behind list -->
+      <div class="cp-gl-panel" :style="{ backgroundColor: sysColor }" />
 
-      <!-- Topbar -->
-      <div class="nc-gl-topbar">
-        <button class="nc-gl-back" @click="backToSystems">← Back</button>
-        <div class="nc-gl-plat-pill" :style="{ borderColor: sysColor, color: sysColor }">
-          <img :src="'/platforms/icons/' + currentPlatform?.fs_slug + '.png'" class="nc-gl-plat-icon" @error="(e:any) => e.target.style.display='none'" />
-          {{ currentPlatform?.name }}
-        </div>
-        <div class="nc-gl-spacer" />
-        <button class="nc-gl-view-btn" :class="{ active: gameView === 'list' }" @click="gameView = 'list'">☰</button>
-        <button class="nc-gl-view-btn" :class="{ active: gameView === 'carousel' }" @click="gameView = 'carousel'">▦</button>
+      <!-- System logo (top, above list) -->
+      <div class="cp-gl-syslogo-wrap">
+        <img :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-gl-syslogo-icon" @error="(e:any) => e.target.style.display='none'" />
+        <img :src="'/platforms/names/' + (currentPlatform?.fs_slug||'') + '.svg'" class="cp-gl-syslogo-name" @error="(e:any) => e.target.style.display='none'" />
       </div>
 
-      <!-- Game list (left) -->
-      <div class="nc-gl-list" ref="gameListRef">
+      <!-- Text list (just names, no covers — like Pop) -->
+      <div class="cp-gl-list" ref="gameListRef">
         <div
-          v-for="(rom, i) in roms"
-          :key="rom.id"
-          class="nc-gl-item"
-          :class="{ active: i === romIdx }"
-          :style="i === romIdx ? { backgroundColor: sysColor } : {}"
+          v-for="(rom, i) in roms" :key="rom.id"
+          class="cp-gl-row"
+          :class="{ selected: i === romIdx }"
           @click="romIdx = i"
-        >
-          <img v-if="rom.cover_path" :src="rom.cover_path" class="nc-gl-item-cover" />
-          <div v-else class="nc-gl-item-cover nc-gl-item-cover--empty" />
-          <span class="nc-gl-item-title">{{ rom.title }}</span>
-        </div>
+        >{{ rom.title }}</div>
       </div>
 
-      <!-- Showcase (right) -->
-      <div class="nc-gl-showcase">
-        <div class="nc-gl-cover-wrap">
-          <img v-if="selectedRom?.cover_path" :src="selectedRom.cover_path" class="nc-gl-cover" />
-          <div v-else class="nc-gl-cover nc-gl-cover--empty">No Cover</div>
-        </div>
-        <div class="nc-gl-detail">
-          <img v-if="selectedRom?.wheel_path || detail?.wheel_path" :src="detail?.wheel_path || selectedRom?.wheel_path" class="nc-gl-wheel" @error="(e:any) => e.target.style.display='none'" />
-          <div v-else class="nc-gl-title">{{ selectedRom?.title || '' }}</div>
-          <div class="nc-gl-meta">
-            <span v-if="selectedRom?.release_year">{{ selectedRom.release_year }}</span>
-            <span v-if="detail?.genres?.length">{{ detail.genres.slice(0, 2).join(' · ') }}</span>
-            <span v-if="detail?.developer">{{ detail.developer }}</span>
-          </div>
-          <div v-if="detail?.ss_score" class="nc-gl-rating" :style="{ color: sysColor }">
-            {{ '★'.repeat(Math.round(detail.ss_score / 4)) }}{{ '☆'.repeat(5 - Math.round(detail.ss_score / 4)) }}
-            <span class="nc-gl-rating-num">{{ (detail.ss_score / 2).toFixed(1) }}</span>
-          </div>
-          <div v-if="detail?.screenshots?.length" class="nc-gl-shots">
-            <img
-              v-for="(s, si) in detail.screenshots.slice(0, 4)"
-              :key="si" :src="s"
-              class="nc-gl-shot"
-              @click="shotIdx = si"
-            />
-          </div>
-          <div v-if="detail?.description" class="nc-gl-desc">{{ detail.description }}</div>
-          <button class="nc-gl-play" :style="{ background: sysColor }" @click="launchGame">▶ PLAY</button>
-        </div>
+      <!-- Big image: screenshot/video/cover (center-right, 60% x 91%) -->
+      <div class="cp-gl-bigimage">
+        <img v-if="detail?.screenshots?.[0]" :src="detail.screenshots[0]" class="cp-gl-bigimage-img" />
+        <img v-else-if="selectedRom?.cover_path" :src="selectedRom.cover_path" class="cp-gl-bigimage-img" />
       </div>
 
-      <div class="nc-help">
-        <span><kbd>↑↓</kbd> Games</span>
-        <span><kbd>A</kbd> Play</span>
-        <span><kbd>X</kbd> Screenshots</span>
-        <span><kbd>B</kbd> Back</span>
+      <div class="cp-help">
+        <span>↑↓ Games</span>
+        <span>A Play</span>
+        <span>X Screenshots</span>
+        <span>Tab View</span>
+        <span>B Back</span>
       </div>
     </template>
 
-    <!-- ════════════════════════════════════════════════════════════════════
-         GAME CAROUSEL VIEW — full-screen covers
-         ════════════════════════════════════════════════════════════════════ -->
+    <!-- ═══ GAME CAROUSEL — full-screen fanart (Pop style) ═════════════ -->
     <template v-if="state === 'games-carousel'">
-      <!-- BG: selected game artwork -->
-      <div class="nc-gc-bg">
-        <img v-if="selectedRom?.background_path || selectedRom?.cover_path" :src="selectedRom.background_path || selectedRom.cover_path" class="nc-gc-bg-img" />
+      <!-- Full-screen game artwork -->
+      <div class="cp-gc-bg">
+        <transition name="cp-slide" mode="out-in">
+          <img v-if="selectedRom" :key="selectedRom.id" :src="selectedRom.background_path || selectedRom.cover_path || ''" class="cp-gc-bg-img" />
+        </transition>
       </div>
-      <div class="nc-gc-mask" />
+      <div class="cp-gc-dim" />
 
-      <div class="nc-gl-topbar">
-        <button class="nc-gl-back" @click="backToSystems">← Back</button>
-        <div class="nc-gl-plat-pill" :style="{ borderColor: sysColor, color: sysColor }">{{ currentPlatform?.name }}</div>
-        <div class="nc-gl-spacer" />
-        <button class="nc-gl-view-btn" :class="{ active: gameView === 'list' }" @click="gameView = 'list'">☰</button>
-        <button class="nc-gl-view-btn" :class="{ active: gameView === 'carousel' }" @click="gameView = 'carousel'">▦</button>
-      </div>
+      <!-- System name (top left) -->
+      <div class="cp-gc-sysname">{{ currentPlatform?.name || '' }}</div>
 
-      <!-- Cover carousel -->
-      <div class="nc-gc-track">
-        <div
-          v-for="(rom, i) in visibleRoms"
-          :key="rom.id"
-          class="nc-gc-card"
-          :class="{ active: i === 2, side: i !== 2 }"
-          @click="i === 2 ? launchGame() : (romIdx = romIdx + (i - 2))"
-        >
-          <img v-if="rom.cover_path" :src="rom.cover_path" class="nc-gc-card-img" />
-          <div v-else class="nc-gc-card-img nc-gc-card--empty" />
-        </div>
-      </div>
+      <!-- Game name (bottom left, big) -->
+      <div class="cp-gc-gamename">{{ selectedRom?.title || '' }}</div>
 
-      <!-- Game info overlay at bottom -->
-      <div class="nc-gc-info">
-        <div class="nc-gc-name">{{ selectedRom?.title || '' }}</div>
-        <div class="nc-gc-meta">
-          <span v-if="selectedRom?.release_year">{{ selectedRom.release_year }}</span>
-          <span v-if="detail?.genres?.length">{{ detail.genres.slice(0, 2).join(' · ') }}</span>
-          <span v-if="detail?.ss_score">★ {{ (detail.ss_score / 2).toFixed(1) }}</span>
-        </div>
-        <button class="nc-gc-play" :style="{ background: sysColor }" @click="launchGame">▶ PLAY</button>
-      </div>
+      <!-- Year (bottom left, small) -->
+      <div class="cp-gc-year">{{ selectedRom?.release_year || '' }}</div>
 
-      <div class="nc-help">
-        <span><kbd>←→</kbd> Games</span>
-        <span><kbd>A</kbd> Play</span>
-        <span><kbd>B</kbd> Back</span>
+      <div class="cp-help">
+        <span>←→ Games</span>
+        <span>A Play</span>
+        <span>B Back</span>
+        <span>Start Menu</span>
       </div>
     </template>
 
-    <!-- ════════════════════════════════════════════════════════════════════
-         OVERLAYS: Menu, Exit, Screenshot viewer
-         ════════════════════════════════════════════════════════════════════ -->
-
-    <!-- Menu -->
-    <transition name="nc-fade">
-      <div v-if="menuOpen" class="nc-overlay" @click.self="menuOpen = false">
-        <div class="nc-menu">
-          <div class="nc-menu-title" :style="{ color: sysColor }">SETTINGS</div>
-          <div class="nc-menu-row" :class="{ focus: menuIdx === 0 }" @click="toggleView">
-            View: {{ gameView === 'list' ? 'List' : 'Carousel' }}
-          </div>
-          <div class="nc-menu-row" :class="{ focus: menuIdx === 1 }" @click="cycleLaunchMode">
-            Launch: {{ launchMode }}
-          </div>
-          <div class="nc-menu-row" :class="{ focus: menuIdx === 2 }" @click="toggleBezel">
-            Bezel: {{ bezelOn ? 'ON' : 'OFF' }}
-          </div>
-          <div class="nc-menu-row nc-menu-row--resume" :class="{ focus: menuIdx === 3 }" @click="menuOpen = false">
-            Resume
-          </div>
-          <div class="nc-menu-row nc-menu-row--exit" :class="{ focus: menuIdx === 4 }" @click="doExit">
-            Exit Couch Mode
-          </div>
-          <div class="nc-menu-hint">↑↓ Navigate · A Select · B Close</div>
+    <!-- ═══ OVERLAYS ═══════════════════════════════════════════════════ -->
+    <transition name="cp-fade">
+      <div v-if="menuOpen" class="cp-overlay" @click.self="menuOpen=false">
+        <div class="cp-menu">
+          <div class="cp-menu-title" :style="{color:sysColor}">SETTINGS</div>
+          <div v-for="(m,i) in menuItems" :key="i" class="cp-menu-row" :class="{focus:menuIdx===i,danger:m.danger}" @click="m.action">{{m.label}}</div>
         </div>
       </div>
     </transition>
-
-    <!-- Exit confirmation -->
-    <transition name="nc-fade">
-      <div v-if="exitOpen" class="nc-overlay" @click.self="exitOpen = false">
-        <div class="nc-exit-panel">
-          <div class="nc-exit-title">Exit Couch Mode?</div>
-          <div class="nc-exit-row" :class="{ focus: exitIdx === 0 }" @click="exitOpen = false">Stay</div>
-          <div class="nc-exit-row nc-exit-row--danger" :class="{ focus: exitIdx === 1 }" @click="doExit">Exit</div>
+    <transition name="cp-fade">
+      <div v-if="exitOpen" class="cp-overlay" @click.self="exitOpen=false">
+        <div class="cp-menu" style="width:280px;text-align:center">
+          <div class="cp-menu-title">Exit Couch Mode?</div>
+          <div class="cp-menu-row" :class="{focus:exitIdx===0}" @click="exitOpen=false">Stay</div>
+          <div class="cp-menu-row danger" :class="{focus:exitIdx===1}" @click="doExit">Exit</div>
         </div>
       </div>
     </transition>
-
-    <!-- Screenshot viewer -->
-    <transition name="nc-fade">
-      <div v-if="shotIdx >= 0 && detail?.screenshots" class="nc-overlay nc-shot-viewer" @click.self="shotIdx = -1">
-        <img :src="detail.screenshots[shotIdx]" class="nc-shot-img" />
-        <div class="nc-shot-counter">{{ shotIdx + 1 }} / {{ detail.screenshots.length }}</div>
+    <transition name="cp-fade">
+      <div v-if="shotIdx>=0 && detail?.screenshots" class="cp-overlay" @click.self="shotIdx=-1">
+        <img :src="detail.screenshots[shotIdx]" class="cp-shot-img" />
+        <div class="cp-shot-ctr">{{shotIdx+1}} / {{detail.screenshots.length}}</div>
       </div>
     </transition>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 const _gd = (window as any).__GD__
 const client = _gd.api
-const auth = _gd.stores.auth()
 const router = useRouter()
-
 const { useCouchNav, couchNavPaused } = _gd.composables
 const getEjsCore = _gd.getEjsCore
 
-/* ── Types ──────────────────────────────────────────────────────────────── */
-interface Platform {
-  id: number; slug: string; fs_slug: string; name: string; rom_count: number
-  cover_aspect: string | null; description: string | null; manufacturer: string | null
-  release_year_platform: number | null; generation: number | null; wheel_path: string | null
-}
-interface Rom {
-  id: number; slug: string; title: string; cover_path: string | null; cover_type: string | null
-  cover_aspect: string | null; background_path: string | null; wheel_path: string | null
-  video_path: string | null; release_year: number | null; bezel_path: string | null
-}
-interface RomDetail {
-  description: string | null; screenshots: string[] | null; background_path: string | null
-  developer: string | null; genres: string[] | null; ss_score: number | null
-  video_path: string | null; wheel_path: string | null
-  hltb_main_s: number | null; hltb_extra_s: number | null; hltb_complete_s: number | null
+interface Platform { id:number; slug:string; fs_slug:string; name:string; rom_count:number; description:string|null; manufacturer:string|null; release_year_platform:number|null; generation:number|null; wheel_path:string|null }
+interface Rom { id:number; slug:string; title:string; cover_path:string|null; background_path:string|null; wheel_path:string|null; video_path:string|null; release_year:number|null; bezel_path:string|null }
+interface Detail { description:string|null; screenshots:string[]|null; developer:string|null; genres:string[]|null; ss_score:number|null; wheel_path:string|null }
+
+const COLORS: Record<string,string> = {
+  nes:'#c43d41',snes:'#df5142',n64:'#367d3f',gb:'#5a6e7e',gba:'#3f3f95',gbc:'#6b3fa0',
+  nds:'#a0a0a0',genesis:'#c23b2c',megadrive:'#c23b2c',mastersystem:'#bf2020',gamegear:'#2c68b0',
+  saturn:'#5566aa',dreamcast:'#e87d2a',psx:'#2555a0',psp:'#444444',neogeo:'#d4a935',
+  arcade:'#e8b230',atarist:'#3a7bc8',atari2600:'#c85a30',fbneo:'#e8b230',mame:'#e8b230',
+  pc:'#3daee8',windows:'#3daee8',
 }
 
-/* ── System colors per platform (from Colorful Pop) ─────────────────────── */
-const PLATFORM_COLORS: Record<string, string> = {
-  nes: '#c43d41', snes: '#df5142', n64: '#367d3f', gb: '#5a6e7e', gba: '#3f3f95',
-  gbc: '#6b3fa0', nds: '#a0a0a0', genesis: '#c23b2c', megadrive: '#c23b2c',
-  mastersystem: '#bf2020', gamegear: '#2c68b0', saturn: '#555555', dreamcast: '#e87d2a',
-  psx: '#2555a0', psp: '#444444', neogeo: '#d4a935', arcade: '#e8b230',
-  atarist: '#3a7bc8', atari2600: '#c85a30', atari7800: '#c85a30', atarilynx: '#bf4040',
-  pce: '#e04040', pcengine: '#e04040', sega32x: '#2b2b9f',
-  fbneo: '#e8b230', mame: '#e8b230',
-}
-const DEFAULT_SYS_COLOR = '#00d4ff'
-
-/* ── State ──────────────────────────────────────────────────────────────── */
-type ViewState = 'systems' | 'games-list' | 'games-carousel'
-const state = ref<ViewState>('systems')
+type State = 'systems'|'games-list'|'games-carousel'
+const state = ref<State>('systems')
 const platforms = ref<Platform[]>([])
 const sysIdx = ref(0)
 const roms = ref<Rom[]>([])
 const romIdx = ref(0)
-const detail = ref<RomDetail | null>(null)
-const detailCache = new Map<number, RomDetail>()
-const gameView = ref<'list' | 'carousel'>(localStorage.getItem('gd3_couch_view') as any || 'list')
-const menuOpen = ref(false)
-const menuIdx = ref(0)
-const exitOpen = ref(false)
-const exitIdx = ref(0)
+const detail = ref<Detail|null>(null)
+const cache = new Map<number,Detail>()
+const gameView = ref<'list'|'carousel'>(localStorage.getItem('gd3_couch_view') as any||'list')
+const menuOpen = ref(false); const menuIdx = ref(0)
+const exitOpen = ref(false); const exitIdx = ref(0)
 const shotIdx = ref(-1)
-const gameListRef = ref<HTMLElement | null>(null)
+const gameListRef = ref<HTMLElement|null>(null)
 const loaded = new Set<string>()
+const launchMode = ref(localStorage.getItem('gd3_couch_launch')||'tab')
+const bezelOn = ref(localStorage.getItem('gd3_couch_bezel')==='on')
 
-const launchMode = ref(localStorage.getItem('gd3_couch_launch') || 'tab')
-const bezelOn = ref(localStorage.getItem('gd3_couch_bezel') === 'on')
+const currentPlatform = computed(()=>platforms.value[sysIdx.value]??null)
+const selectedRom = computed(()=>roms.value[romIdx.value]??null)
+const sysColor = computed(()=>COLORS[currentPlatform.value?.fs_slug||'']||'#4466aa')
 
-/* ── Computed ────────────────────────────────────────────────────────────── */
-const currentPlatform = computed(() => platforms.value[sysIdx.value] ?? null)
-const selectedRom = computed(() => roms.value[romIdx.value] ?? null)
-const sysColor = computed(() => {
-  const fs = currentPlatform.value?.fs_slug
-  return fs ? (PLATFORM_COLORS[fs] || DEFAULT_SYS_COLOR) : DEFAULT_SYS_COLOR
-})
-const sysColorDim = computed(() => sysColor.value + '22')
-const rootStyle = computed(() => ({ '--sys-color': sysColor.value }))
-const colorBlockStyle = computed(() => ({ backgroundColor: sysColor.value, opacity: 0.15 }))
+const menuItems = computed(()=>[
+  {label:`View: ${gameView.value}`,action:()=>{gameView.value=gameView.value==='list'?'carousel':'list';localStorage.setItem('gd3_couch_view',gameView.value)}},
+  {label:`Launch: ${launchMode.value}`,action:()=>{const m=['tab','window','fullscreen'];launchMode.value=m[(m.indexOf(launchMode.value)+1)%3];localStorage.setItem('gd3_couch_launch',launchMode.value)}},
+  {label:`Bezel: ${bezelOn.value?'ON':'OFF'}`,action:()=>{bezelOn.value=!bezelOn.value;localStorage.setItem('gd3_couch_bezel',bezelOn.value?'on':'off')}},
+  {label:'Resume',action:()=>{menuOpen.value=false}},
+  {label:'Exit',action:()=>doExit(),danger:true},
+])
 
-// Visible platforms for carousel (prev, current, next)
-const visiblePlatforms = computed(() => {
-  const arr = platforms.value
-  if (arr.length === 0) return []
-  const i = sysIdx.value
-  const prev = arr[(i - 1 + arr.length) % arr.length]
-  const cur = arr[i]
-  const next = arr[(i + 1) % arr.length]
-  return arr.length === 1 ? [cur] : arr.length === 2 ? [prev, cur] : [prev, cur, next]
-})
-
-// Visible ROMs for carousel (5 centered on current)
-const visibleRoms = computed(() => {
-  const arr = roms.value
-  if (arr.length === 0) return []
-  const result: Rom[] = []
-  for (let d = -2; d <= 2; d++) {
-    const idx = romIdx.value + d
-    if (idx >= 0 && idx < arr.length) result.push(arr[idx])
-    else result.push({ id: -1, slug: '', title: '', cover_path: null, cover_type: null, cover_aspect: null, background_path: null, wheel_path: null, video_path: null, release_year: null, bezel_path: null })
-  }
-  return result
-})
-
-/* ── Data fetching ──────────────────────────────────────────────────────── */
-async function fetchPlatforms() {
-  try {
-    const { data } = await client.get('/roms/platforms')
-    platforms.value = (Array.isArray(data) ? data : [])
-      .filter((p: any) => p.rom_count > 0)
-      .sort((a: any, b: any) => a.name.localeCompare(b.name))
-      .map((p: any) => ({
-        id: p.id, slug: p.slug, fs_slug: p.fs_slug,
-        name: p.custom_name || p.name, rom_count: p.rom_count,
-        cover_aspect: p.cover_aspect, description: null, manufacturer: null,
-        release_year_platform: null, generation: null, wheel_path: null,
-      }))
-    if (platforms.value.length) loadPlatformDetail(sysIdx.value)
-  } catch (e) { console.error('[NHCouch] fetch platforms:', e) }
-}
-
-async function loadPlatformDetail(idx: number) {
-  for (let d = -1; d <= 1; d++) {
-    const i = idx + d
-    if (i < 0 || i >= platforms.value.length) continue
-    const p = platforms.value[i]
-    if (loaded.has(p.slug)) continue
-    loaded.add(p.slug)
-    try {
-      const { data } = await client.get(`/roms/platforms/${p.slug}`)
-      p.description = data.description ?? null
-      p.manufacturer = data.manufacturer ?? null
-      p.release_year_platform = data.release_year_platform ?? null
-      p.generation = data.generation ?? null
-      if (data.name_logo_path) p.wheel_path = data.name_logo_path
-    } catch { /* silent */ }
-  }
-}
-
-async function fetchRoms() {
-  if (!currentPlatform.value) return
-  try {
-    const { data } = await client.get('/roms', {
-      params: { platform_slug: currentPlatform.value.slug, limit: 500, offset: 0 }
-    })
-    const items = data.items ?? (Array.isArray(data) ? data : [])
-    roms.value = items.map((r: any) => ({
-      id: r.id, slug: r.slug, title: r.name || r.fs_name_no_ext,
-      cover_path: r.cover_path, cover_type: r.cover_type, cover_aspect: r.cover_aspect,
-      background_path: r.background_path, wheel_path: r.wheel_path,
-      video_path: r.video_path, release_year: r.release_year, bezel_path: r.bezel_path,
+async function fetchPlatforms(){
+  try{
+    const{data}=await client.get('/roms/platforms')
+    platforms.value=(Array.isArray(data)?data:[]).filter((p:any)=>p.rom_count>0).sort((a:any,b:any)=>a.name.localeCompare(b.name)).map((p:any)=>({
+      id:p.id,slug:p.slug,fs_slug:p.fs_slug,name:p.custom_name||p.name,rom_count:p.rom_count,
+      description:null,manufacturer:null,release_year_platform:null,generation:null,wheel_path:null,
     }))
-    romIdx.value = 0
-    detail.value = null
-  } catch (e) { console.error('[NHCouch] fetch roms:', e) }
+    if(platforms.value.length)loadDetail(0)
+  }catch(e){console.error('[CP]',e)}
 }
-
-let detailTimer: ReturnType<typeof setTimeout> | null = null
-async function loadRomDetail(rom: Rom) {
-  if (detailCache.has(rom.id)) { detail.value = detailCache.get(rom.id)!; return }
-  try {
-    const { data } = await client.get(`/roms/${rom.id}`)
-    const d: RomDetail = {
-      description: data.summary ?? null, screenshots: data.screenshots ?? null,
-      background_path: data.background_path ?? null, developer: data.developer ?? null,
-      genres: data.genres ?? null, ss_score: data.ss_score ?? null,
-      video_path: data.video_path ?? null, wheel_path: data.wheel_path ?? null,
-      hltb_main_s: data.hltb_main_s ?? null, hltb_extra_s: data.hltb_extra_s ?? null,
-      hltb_complete_s: data.hltb_complete_s ?? null,
-    }
-    detailCache.set(rom.id, d)
-    if (selectedRom.value?.id === rom.id) detail.value = d
-  } catch { /* silent */ }
-}
-
-/* ── Navigation ──────────────────────────────────────────────────────────── */
-function goSystem(dir: number) {
-  const next = sysIdx.value + dir
-  if (next >= 0 && next < platforms.value.length) {
-    sysIdx.value = next
-    loadPlatformDetail(next)
+async function loadDetail(idx:number){
+  for(let d=-1;d<=1;d++){
+    const i=idx+d;if(i<0||i>=platforms.value.length)continue
+    const p=platforms.value[i];if(loaded.has(p.slug))continue;loaded.add(p.slug)
+    try{const{data}=await client.get(`/roms/platforms/${p.slug}`);p.description=data.description??null;p.manufacturer=data.manufacturer??null;p.release_year_platform=data.release_year_platform??null;p.generation=data.generation??null}catch{}
   }
 }
-
-function selectPlatform() {
-  state.value = gameView.value === 'list' ? 'games-list' : 'games-carousel'
-  fetchRoms()
+async function fetchRoms(){
+  if(!currentPlatform.value)return
+  try{const{data}=await client.get('/roms',{params:{platform_slug:currentPlatform.value.slug,limit:500,offset:0}});roms.value=(data.items??(Array.isArray(data)?data:[])).map((r:any)=>({id:r.id,slug:r.slug,title:r.name||r.fs_name_no_ext,cover_path:r.cover_path,background_path:r.background_path,wheel_path:r.wheel_path,video_path:r.video_path,release_year:r.release_year,bezel_path:r.bezel_path}));romIdx.value=0;detail.value=null}catch(e){console.error('[CP]',e)}
+}
+let dt:ReturnType<typeof setTimeout>|null=null
+async function loadRom(rom:Rom){
+  if(cache.has(rom.id)){detail.value=cache.get(rom.id)!;return}
+  try{const{data}=await client.get(`/roms/${rom.id}`);const d:Detail={description:data.summary??null,screenshots:data.screenshots??null,developer:data.developer??null,genres:data.genres??null,ss_score:data.ss_score??null,wheel_path:data.wheel_path??null};cache.set(rom.id,d);if(selectedRom.value?.id===rom.id)detail.value=d}catch{}
 }
 
-function backToSystems() {
-  state.value = 'systems'
-  roms.value = []
-  detail.value = null
+function goSys(dir:number){const n=sysIdx.value+dir;if(n>=0&&n<platforms.value.length){sysIdx.value=n;loadDetail(n)}}
+function selectPlatform(){state.value=gameView.value==='list'?'games-list':'games-carousel';fetchRoms()}
+function backToSystems(){state.value='systems';roms.value=[];detail.value=null}
+function doExit(){router.push('/')}
+function launchGame(){
+  const rom=selectedRom.value,plat=currentPlatform.value;if(!rom||!plat)return
+  const core=getEjsCore(plat.fs_slug);if(!core)return
+  const p:Record<string,string>={rom_id:String(rom.id),rom_name:rom.title,ejs_core:core,platform:plat.fs_slug}
+  if(bezelOn.value)p.bezel='1'
+  const url='/player.html?'+new URLSearchParams(p).toString()
+  if(launchMode.value==='fullscreen')window.location.href=url+'&returnTo=/couch'
+  else if(launchMode.value==='window')window.open(url,'gd3-player','width=1280,height=720,menubar=no,toolbar=no')
+  else window.open(url,'_blank')
+  couchNavPaused.value=true;window.addEventListener('focus',()=>{couchNavPaused.value=false},{once:true})
 }
 
-function launchGame() {
-  const rom = selectedRom.value
-  const plat = currentPlatform.value
-  if (!rom || !plat) return
-  const core = getEjsCore(plat.fs_slug)
-  if (!core) return
+watch(sysIdx,(i)=>loadDetail(i))
+watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})})})
+watch(gameView,(v)=>{if(state.value.startsWith('games-'))state.value=v==='list'?'games-list':'games-carousel'})
 
-  const params: Record<string, string> = {
-    rom_id: String(rom.id), rom_name: rom.title, ejs_core: core, platform: plat.fs_slug,
-  }
-  if (bezelOn.value) params.bezel = '1'
-
-  const url = '/player.html?' + new URLSearchParams(params).toString()
-  const mode = launchMode.value
-  if (mode === 'fullscreen') {
-    window.location.href = url + '&returnTo=/couch'
-  } else if (mode === 'window') {
-    window.open(url, 'gd3-player', 'width=1280,height=720,menubar=no,toolbar=no')
-  } else {
-    window.open(url, '_blank')
-  }
-  couchNavPaused.value = true
-  window.addEventListener('focus', () => { couchNavPaused.value = false }, { once: true })
-}
-
-function toggleView() { gameView.value = gameView.value === 'list' ? 'carousel' : 'list'; localStorage.setItem('gd3_couch_view', gameView.value) }
-function cycleLaunchMode() {
-  const modes = ['tab', 'window', 'fullscreen']
-  const i = (modes.indexOf(launchMode.value) + 1) % modes.length
-  launchMode.value = modes[i]
-  localStorage.setItem('gd3_couch_launch', launchMode.value)
-}
-function toggleBezel() { bezelOn.value = !bezelOn.value; localStorage.setItem('gd3_couch_bezel', bezelOn.value ? 'on' : 'off') }
-function doExit() { router.push('/') }
-function handleRootClick() {}
-
-/* ── Watchers ────────────────────────────────────────────────────────────── */
-watch(sysIdx, () => loadPlatformDetail(sysIdx.value))
-watch(romIdx, () => {
-  detail.value = null
-  shotIdx.value = -1
-  if (detailTimer) clearTimeout(detailTimer)
-  const rom = selectedRom.value
-  if (rom) detailTimer = setTimeout(() => loadRomDetail(rom), 300)
-  // Auto-scroll list
-  nextTick(() => {
-    const el = gameListRef.value?.querySelector('.nc-gl-item.active') as HTMLElement
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  })
-})
-watch(gameView, (v) => {
-  if (state.value.startsWith('games-')) state.value = v === 'list' ? 'games-list' : 'games-carousel'
-})
-
-/* ── Gamepad / keyboard nav ──────────────────────────────────────────────── */
 useCouchNav({
-  up: () => {
-    if (menuOpen.value) { menuIdx.value = Math.max(0, menuIdx.value - 1); return }
-    if (exitOpen.value) { exitIdx.value = 0; return }
-    if (state.value === 'games-list' && romIdx.value > 0) romIdx.value--
-  },
-  down: () => {
-    if (menuOpen.value) { menuIdx.value = Math.min(4, menuIdx.value + 1); return }
-    if (exitOpen.value) { exitIdx.value = 1; return }
-    if (state.value === 'games-list' && romIdx.value < roms.value.length - 1) romIdx.value++
-  },
-  left: () => {
-    if (shotIdx.value > 0) { shotIdx.value--; return }
-    if (state.value === 'systems') goSystem(-1)
-    else if (state.value === 'games-carousel' && romIdx.value > 0) romIdx.value--
-  },
-  right: () => {
-    if (shotIdx.value >= 0 && detail.value?.screenshots && shotIdx.value < detail.value.screenshots.length - 1) { shotIdx.value++; return }
-    if (state.value === 'systems') goSystem(1)
-    else if (state.value === 'games-carousel' && romIdx.value < roms.value.length - 1) romIdx.value++
-  },
-  confirm: () => {
-    if (menuOpen.value) {
-      [toggleView, cycleLaunchMode, toggleBezel, () => { menuOpen.value = false }, doExit][menuIdx.value]?.()
-      return
-    }
-    if (exitOpen.value) { exitIdx.value === 1 ? doExit() : (exitOpen.value = false); return }
-    if (state.value === 'systems') selectPlatform()
-    else launchGame()
-  },
-  back: () => {
-    if (shotIdx.value >= 0) { shotIdx.value = -1; return }
-    if (menuOpen.value) { menuOpen.value = false; return }
-    if (exitOpen.value) { exitOpen.value = false; return }
-    if (state.value.startsWith('games-')) backToSystems()
-    else exitOpen.value = true
-  },
-  menu: () => {
-    if (exitOpen.value) return
-    menuOpen.value = !menuOpen.value
-    menuIdx.value = 0
-  },
-  x: () => {
-    if (detail.value?.screenshots?.length && state.value.startsWith('games-')) shotIdx.value = 0
-  },
+  up:()=>{if(menuOpen.value){menuIdx.value=Math.max(0,menuIdx.value-1);return}if(exitOpen.value){exitIdx.value=0;return}if(state.value==='systems')goSys(-1);if(state.value==='games-list'&&romIdx.value>0)romIdx.value--},
+  down:()=>{if(menuOpen.value){menuIdx.value=Math.min(menuItems.value.length-1,menuIdx.value+1);return}if(exitOpen.value){exitIdx.value=1;return}if(state.value==='systems')goSys(1);if(state.value==='games-list'&&romIdx.value<roms.value.length-1)romIdx.value++},
+  left:()=>{if(shotIdx.value>0){shotIdx.value--;return}if(state.value==='games-carousel'&&romIdx.value>0)romIdx.value--},
+  right:()=>{if(shotIdx.value>=0&&detail.value?.screenshots&&shotIdx.value<detail.value.screenshots.length-1){shotIdx.value++;return}if(state.value==='games-carousel'&&romIdx.value<roms.value.length-1)romIdx.value++},
+  confirm:()=>{if(menuOpen.value){menuItems.value[menuIdx.value]?.action();return}if(exitOpen.value){exitIdx.value===1?doExit():(exitOpen.value=false);return}if(state.value==='systems')selectPlatform();else launchGame()},
+  back:()=>{if(shotIdx.value>=0){shotIdx.value=-1;return}if(menuOpen.value){menuOpen.value=false;return}if(exitOpen.value){exitOpen.value=false;return}if(state.value.startsWith('games-'))backToSystems();else exitOpen.value=true},
+  menu:()=>{if(!exitOpen.value){menuOpen.value=!menuOpen.value;menuIdx.value=0}},
+  x:()=>{if(detail.value?.screenshots?.length&&state.value.startsWith('games-'))shotIdx.value=0},
 })
 
-onMounted(() => {
-  document.documentElement.requestFullscreen?.().catch(() => {})
-  fetchPlatforms()
-})
+onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});fetchPlatforms()})
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+.cp{position:fixed;inset:0;z-index:9999;overflow:hidden;user-select:none;font-family:'Rajdhani',sans-serif;color:#fff}
+.cp-bg{position:absolute;inset:0;z-index:0;background:var(--bg,#1e1e2e)}
+.cp-fade-enter-active,.cp-fade-leave-active{transition:opacity .2s}.cp-fade-enter-from,.cp-fade-leave-to{opacity:0}
+.cp-slide-enter-active,.cp-slide-leave-active{transition:opacity .35s}.cp-slide-enter-from,.cp-slide-leave-to{opacity:0}
 
-.ncouch {
-  position: fixed; inset: 0; z-index: 9999;
-  background: #050508; color: #fff;
-  font-family: 'Rajdhani', sans-serif;
-  overflow: hidden;
-  user-select: none;
-}
+/* ═══ SYSTEM VIEW ════════════════════════════════════════════════════ */
+/* Right color block: pos 35.9% left, 4.5% top, 61.5% wide, 91% tall */
+.cp-sys-block{position:absolute;left:35.9%;top:4.5%;width:61.5%;height:91%;z-index:2}
+/* Platform image centered in color block */
+.cp-sys-img-wrap{position:absolute;left:36.7%;top:4.5%;width:60%;height:91%;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cp-sys-img{max-width:100%;max-height:100%;object-fit:contain}
 
-/* ═══ TRANSITIONS ═══════════════════════════════════════════════════════ */
-.nc-crossfade-enter-active, .nc-crossfade-leave-active { transition: opacity .5s ease; }
-.nc-crossfade-enter-from, .nc-crossfade-leave-to { opacity: 0; }
-.nc-fade-enter-active, .nc-fade-leave-active { transition: opacity .2s ease; }
-.nc-fade-enter-from, .nc-fade-leave-to { opacity: 0; }
+/* Year: 2.6%, 15% */
+.cp-sys-year{position:absolute;left:2.6%;top:15%;z-index:10;font-size:clamp(14px,3vh,28px);font-weight:300;letter-spacing:.03em}
+/* Name: 2.6%, 22.5% */
+.cp-sys-name{position:absolute;left:2.6%;top:22.5%;width:30.7%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vh,52px);font-weight:900;line-height:1.1}
+/* Desc: 2.6%, 44% */
+.cp-sys-desc{position:absolute;left:2.6%;top:44%;width:30.7%;height:22%;z-index:10;font-size:clamp(11px,1.6vh,15px);color:rgba(255,255,255,.55);line-height:1.5;overflow-y:auto;scrollbar-width:none}
+.cp-sys-desc::-webkit-scrollbar{display:none}
 
-/* ═══ SYSTEM VIEW ══════════════════════════════════════════════════════ */
-.nc-sys-bg { position: absolute; inset: 0; z-index: 0; }
-.nc-sys-bg-img { width: 100%; height: 100%; object-fit: cover; filter: blur(20px) brightness(.3) saturate(1.3); transition: opacity .5s; }
+/* Bottom: 3 blocks at 72.2% y, each ~10.4vw x 18.6vh */
+.cp-sys-bottom{position:absolute;left:2.55%;top:72.2%;display:flex;z-index:3;gap:0}
+.cp-sys-bottom-block{width:10.4vw;height:18.6vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.cp-sys-bottom-block--dark{filter:brightness(.8)}
+.cp-sys-bottom-block--light{filter:brightness(1.2)}
+.cp-sys-bottom-icon{width:50%;height:auto;max-height:60%;object-fit:contain;filter:brightness(0) invert(1)}
+.cp-sys-bottom-num{font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vh,32px);font-weight:700}
+.cp-sys-bottom-label{font-size:clamp(9px,1.1vh,12px);font-weight:700;text-transform:uppercase;letter-spacing:.12em}
 
-.nc-sys-color-block { position: absolute; left: 35.9%; top: 4.5%; width: 61.5%; height: 91%; z-index: 1; border-radius: 8px; }
+/* Nav arrows: bottom right, white boxes */
+.cp-sys-arrows{position:absolute;right:2.5%;bottom:7%;z-index:10;display:flex;gap:6px}
+.cp-sys-arrow{width:40px;height:40px;background:rgba(255,255,255,.9);color:#333;border:none;border-radius:4px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.cp-sys-arrow:hover{background:#fff}
 
-.nc-sys-info { position: absolute; left: 2.6%; top: 4.5%; width: 30.7%; height: 91%; z-index: 10; display: flex; flex-direction: column; padding: 20px 0; }
-.nc-sys-year { font-family: 'Orbitron', sans-serif; font-size: clamp(14px, 2.2vh, 22px); font-weight: 700; margin-top: 10%; letter-spacing: .05em; }
-.nc-sys-name { font-family: 'Orbitron', sans-serif; font-size: clamp(22px, 4.5vh, 48px); font-weight: 900; color: #fff; margin-top: 2%; line-height: 1.1; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
-.nc-sys-desc { font-size: clamp(12px, 1.8vh, 16px); color: rgba(255,255,255,.55); line-height: 1.6; margin-top: 6%; max-height: 22vh; overflow-y: auto; scrollbar-width: none; }
-.nc-sys-desc::-webkit-scrollbar { display: none; }
+/* ═══ GAME LIST — list-video style ═══════════════════════════════════ */
+/* Color panel: 2.6%, 4.6%, 37% wide (list only, not full 56%) */
+.cp-gl-panel{position:absolute;left:2.6%;top:4.6%;width:37%;height:90.8%;z-index:1}
 
-.nc-sys-meta { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-.nc-sys-logo-wrap { height: 50px; }
-.nc-sys-logo { height: 100%; width: auto; max-width: 160px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,.3)); }
-.nc-sys-counts { font-family: 'Orbitron', sans-serif; font-size: clamp(11px, 1.6vh, 15px); font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.nc-sys-count-ico { font-size: 1.2em; }
+/* System logo: icon + SVG name, top of list */
+.cp-gl-syslogo-wrap{position:absolute;left:5.2%;top:7%;z-index:10;display:flex;align-items:center;gap:10px}
+.cp-gl-syslogo-icon{height:clamp(28px,5vh,48px);width:auto;filter:brightness(0) invert(1)}
+.cp-gl-syslogo-name{height:clamp(20px,3.5vh,36px);width:auto;max-width:20vw;filter:brightness(0) invert(1)}
 
-/* Carousel */
-.nc-sys-carousel { position: absolute; right: 2%; top: 4.5%; width: 58%; height: 91%; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; perspective: 1200px; }
+/* Text list: just names, rounded pill for selected */
+.cp-gl-list{position:absolute;left:5.2%;top:18%;width:30%;height:74%;z-index:10;overflow-y:auto;scrollbar-width:none}
+.cp-gl-list::-webkit-scrollbar{display:none}
+.cp-gl-row{padding:7px 16px;font-size:clamp(14px,2.2vh,20px);font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:99px;margin-bottom:1px;transition:background .1s}
+.cp-gl-row:not(.selected){color:rgba(255,255,255,.45)}
+.cp-gl-row.selected{background:rgba(255,255,255,.95);color:var(--sys-color,#4466aa)}
 
-.nc-sys-card { width: 55%; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; transition: all .4s ease; border: 2px solid transparent; }
-.nc-sys-card.active { border-color: var(--sys-color, #00d4ff); box-shadow: 0 0 40px color-mix(in srgb, var(--sys-color) 40%, transparent), 0 20px 60px rgba(0,0,0,.6); transform: scale(1); z-index: 3; }
-.nc-sys-card.prev { transform: scale(.7) translateY(-30%) rotateX(8deg); opacity: .4; z-index: 1; }
-.nc-sys-card.next { transform: scale(.7) translateY(30%) rotateX(-8deg); opacity: .4; z-index: 1; }
+/* Big image on right (like list-video in Pop: screenshot centered in color block area) */
+.cp-gl-bigimage{position:absolute;left:42%;top:4.5%;width:56%;height:91%;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cp-gl-bigimage-img{max-width:95%;max-height:95%;object-fit:contain}
 
-.nc-sys-card-img { width: 100%; height: 100%; object-fit: cover; }
-.nc-sys-card-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.8) 100%); }
-.nc-sys-card-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 2; }
-.nc-sys-card-icon { width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255,255,255,.4)); }
-.nc-sys-card-logo { height: 16px; width: auto; max-width: 120px; filter: brightness(0) invert(1); }
-.nc-sys-card-name { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+/* ═══ GAME CAROUSEL — full-screen artwork ════════════════════════════ */
+.cp-gc-bg{position:absolute;inset:0;z-index:0}
+.cp-gc-bg-img{width:100%;height:100%;object-fit:cover;filter:brightness(.5)}
+.cp-gc-dim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.7) 100%)}
 
-.nc-sys-scroll-hint { position: absolute; right: 3%; bottom: 6%; z-index: 10; font-size: 20px; color: rgba(255,255,255,.25); animation: nc-bounce 2s ease-in-out infinite; }
-@keyframes nc-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+/* System name: top left */
+.cp-gc-sysname{position:absolute;left:2.6%;top:4.6%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(12px,2vh,20px);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5)}
+/* Game name: bottom left, BIG */
+.cp-gc-gamename{position:absolute;left:2.6%;bottom:16%;width:40%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vh,64px);font-weight:900;line-height:1.05;text-shadow:0 2px 16px rgba(0,0,0,.8)}
+/* Year: below game name */
+.cp-gc-year{position:absolute;left:2.6%;bottom:10%;z-index:10;font-size:clamp(12px,1.8vh,16px);color:rgba(255,255,255,.4)}
 
-/* ═══ GAME LIST VIEW ═══════════════════════════════════════════════════ */
-.nc-gl-bg { position: absolute; left: 2.6%; top: 4.6%; width: 56.2%; height: 90.8%; z-index: 0; border-radius: 10px; }
+/* ═══ HELP BAR ════════════════════════════════════════════════════ */
+.cp-help{position:absolute;bottom:0;left:0;right:0;z-index:50;padding:10px 0;display:flex;gap:24px;justify-content:center;font-size:12px;color:rgba(255,255,255,.25);letter-spacing:.02em}
 
-.nc-gl-topbar { position: absolute; top: 0; left: 0; right: 0; height: 48px; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 0 2.6%; }
-.nc-gl-back { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; color: #fff; font-family: 'Rajdhani'; font-size: 13px; font-weight: 700; padding: 6px 14px; cursor: pointer; }
-.nc-gl-back:hover { background: rgba(255,255,255,.15); }
-.nc-gl-plat-pill { display: flex; align-items: center; gap: 6px; padding: 4px 14px; border: 1px solid; border-radius: 20px; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
-.nc-gl-plat-icon { width: 16px; height: 16px; object-fit: contain; }
-.nc-gl-spacer { flex: 1; }
-.nc-gl-view-btn { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 4px; color: rgba(255,255,255,.4); font-size: 16px; width: 32px; height: 32px; cursor: pointer; }
-.nc-gl-view-btn.active { color: var(--sys-color); border-color: var(--sys-color); }
+/* ═══ OVERLAYS ════════════════════════════════════════════════════ */
+.cp-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center}
+.cp-menu{width:340px;background:rgba(20,16,40,.97);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:20px 16px}
+.cp-menu-title{font-family:'Orbitron';font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.cp-menu-row{padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);margin-bottom:4px;font-size:14px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;transition:all .1s}
+.cp-menu-row.focus{background:rgba(255,255,255,.1);border-color:var(--sys-color);color:#fff}
+.cp-menu-row.danger{color:#ef4444}
+.cp-menu-row.danger.focus{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35)}
 
-/* Left game list */
-.nc-gl-list { position: absolute; left: 5.2%; top: 22.1%; width: 18.7%; height: 68.6%; z-index: 10; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 2px; }
-.nc-gl-list::-webkit-scrollbar { display: none; }
-.nc-gl-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background .15s; white-space: nowrap; overflow: hidden; }
-.nc-gl-item.active { color: #fff; }
-.nc-gl-item:not(.active) { color: rgba(255,255,255,.45); }
-.nc-gl-item:not(.active):hover { background: rgba(255,255,255,.06); }
-.nc-gl-item-cover { width: 36px; height: 48px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
-.nc-gl-item-cover--empty { width: 36px; height: 48px; background: rgba(255,255,255,.06); border-radius: 3px; flex-shrink: 0; }
-.nc-gl-item-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-
-/* Right showcase */
-.nc-gl-showcase { position: absolute; left: 26%; top: 10%; right: 2%; bottom: 8%; z-index: 10; display: flex; gap: 24px; }
-.nc-gl-cover-wrap { flex-shrink: 0; width: 27.9%; display: flex; align-items: center; justify-content: center; }
-.nc-gl-cover { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; border: 2px solid rgba(255,255,255,.1); box-shadow: 0 12px 40px rgba(0,0,0,.6); }
-.nc-gl-cover--empty { width: 100%; aspect-ratio: 3/4; background: rgba(255,255,255,.04); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.15); font-size: 14px; }
-
-.nc-gl-detail { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; scrollbar-width: none; padding-top: 12%; }
-.nc-gl-detail::-webkit-scrollbar { display: none; }
-.nc-gl-wheel { height: 40px; width: auto; max-width: 250px; object-fit: contain; filter: brightness(0) invert(1); }
-.nc-gl-title { font-family: 'Orbitron'; font-size: clamp(18px, 3.5vh, 32px); font-weight: 900; line-height: 1.1; }
-.nc-gl-meta { font-size: 13px; color: rgba(255,255,255,.45); display: flex; gap: 12px; flex-wrap: wrap; }
-.nc-gl-rating { font-size: 16px; letter-spacing: 2px; }
-.nc-gl-rating-num { font-family: 'Orbitron'; font-size: 14px; font-weight: 700; margin-left: 8px; }
-
-.nc-gl-shots { display: flex; gap: 6px; margin-top: 4px; }
-.nc-gl-shot { width: 80px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.1); cursor: pointer; transition: border-color .2s; }
-.nc-gl-shot:hover { border-color: var(--sys-color); }
-
-.nc-gl-desc { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.6; max-height: 15vh; overflow-y: auto; scrollbar-width: none; }
-.nc-gl-desc::-webkit-scrollbar { display: none; }
-
-.nc-gl-play { align-self: flex-start; padding: 10px 32px; border: none; border-radius: 8px; color: #fff; font-family: 'Orbitron'; font-size: 14px; font-weight: 700; letter-spacing: .08em; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.4); transition: all .2s; margin-top: auto; }
-.nc-gl-play:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.5); }
-
-/* ═══ GAME CAROUSEL VIEW ═══════════════════════════════════════════════ */
-.nc-gc-bg { position: absolute; inset: 0; z-index: 0; }
-.nc-gc-bg-img { width: 100%; height: 100%; object-fit: cover; filter: brightness(.25) saturate(1.2); }
-.nc-gc-mask { position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(5,5,8,.85) 100%); }
-
-.nc-gc-track { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -55%); z-index: 5; display: flex; align-items: center; gap: 16px; perspective: 1000px; }
-.nc-gc-card { width: 160px; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; transition: all .3s ease; border: 2px solid transparent; flex-shrink: 0; }
-.nc-gc-card.active { width: 240px; border-color: var(--sys-color); box-shadow: 0 0 30px color-mix(in srgb, var(--sys-color) 30%, transparent), 0 16px 48px rgba(0,0,0,.6); transform: scale(1); cursor: pointer; }
-.nc-gc-card.side { opacity: .35; filter: blur(1px); transform: scale(.85); }
-.nc-gc-card-img { width: 100%; height: 100%; object-fit: cover; }
-.nc-gc-card--empty { width: 100%; height: 100%; background: rgba(255,255,255,.04); }
-
-.nc-gc-info { position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: 500px; }
-.nc-gc-name { font-family: 'Orbitron'; font-size: clamp(20px, 3.5vh, 36px); font-weight: 900; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
-.nc-gc-meta { font-size: 13px; color: rgba(255,255,255,.45); display: flex; gap: 12px; justify-content: center; margin-top: 6px; }
-.nc-gc-play { margin-top: 16px; padding: 10px 32px; border: none; border-radius: 8px; color: #fff; font-family: 'Orbitron'; font-size: 14px; font-weight: 700; letter-spacing: .08em; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
-
-/* ═══ HELP BAR ═════════════════════════════════════════════════════════ */
-.nc-help { position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; padding: 8px 2.6%; display: flex; gap: 20px; font-size: 11px; color: rgba(255,255,255,.2); }
-.nc-help kbd { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-family: inherit; color: rgba(255,255,255,.3); }
-
-/* ═══ OVERLAYS ═════════════════════════════════════════════════════════ */
-.nc-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.78); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; }
-
-.nc-menu { width: 360px; background: rgba(10,6,24,.97); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 24px 20px; display: flex; flex-direction: column; gap: 6px; }
-.nc-menu-title { font-family: 'Orbitron'; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
-.nc-menu-row { padding: 12px 16px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); font-size: 14px; font-weight: 600; color: rgba(255,255,255,.6); cursor: pointer; transition: all .12s; }
-.nc-menu-row.focus { background: rgba(255,255,255,.1); border-color: var(--sys-color, rgba(0,212,255,.35)); color: #fff; }
-.nc-menu-row--exit { color: #ef4444; }
-.nc-menu-row--exit.focus { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); }
-.nc-menu-hint { text-align: center; margin-top: 8px; font-size: 10px; color: rgba(255,255,255,.2); }
-
-.nc-exit-panel { width: 300px; background: rgba(10,6,24,.97); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 24px 20px; text-align: center; }
-.nc-exit-title { font-family: 'Orbitron'; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
-.nc-exit-row { padding: 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); margin-bottom: 6px; cursor: pointer; font-weight: 600; }
-.nc-exit-row.focus { background: rgba(255,255,255,.1); border-color: var(--sys-color); color: #fff; }
-.nc-exit-row--danger.focus { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color: #ef4444; }
-
-.nc-shot-viewer { cursor: zoom-out; }
-.nc-shot-img { max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 16px 60px rgba(0,0,0,.8); }
-.nc-shot-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-family: 'Orbitron'; font-size: 12px; color: rgba(255,255,255,.4); }
-
-/* ═══ RESPONSIVE ═══════════════════════════════════════════════════════ */
-@media (max-width: 900px) {
-  .nc-sys-info { width: 90%; left: 5%; top: auto; bottom: 5%; height: auto; }
-  .nc-sys-carousel { width: 100%; right: 0; top: 5%; height: 50%; }
-  .nc-gl-list { width: 30%; }
-  .nc-gl-showcase { left: 35%; }
-}
+.cp-shot-img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:6px}
+.cp-shot-ctr{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:'Orbitron';font-size:12px;color:rgba(255,255,255,.4)}
 </style>
