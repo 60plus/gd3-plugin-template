@@ -141,19 +141,19 @@
       </div>
 
       <!-- Overlay + video (right-top — console with game video in TV) -->
-      <div class="cp-gl-overlay-wrap" v-if="currentPlatform">
+      <div class="cp-gl-overlay-wrap" v-if="selectedRomPlatformFsSlug">
         <video
-          v-if="selectedRom?.video_path"
-          :key="selectedRom.id"
+          v-if="selectedRom?.video_path || detail?.video_path"
+          :key="selectedRom?.id"
           ref="glVideoRef"
-          :src="selectedRom.video_path"
+          :src="selectedRom?.video_path || detail?.video_path || ''"
           class="cp-gl-overlay-video"
-          :style="videoStyle"
+          :style="glVideoStyle"
           autoplay muted playsinline loop
           @canplay="onGlVideoCanPlay"
         />
-        <div v-if="nhScanlines && selectedRom?.video_path" class="cp-sys-video-scanlines" :style="videoStyle" />
-        <img :src="pluginAsset('overlay/' + currentPlatform.fs_slug + '.webp')" class="cp-gl-overlay-img" />
+        <div v-if="nhScanlines && (selectedRom?.video_path || detail?.video_path)" class="cp-sys-video-scanlines" :style="glVideoStyle" />
+        <img :src="pluginAsset('overlay/' + selectedRomPlatformFsSlug + '.webp')" class="cp-gl-overlay-img" />
       </div>
 
       <!-- Info panel (bottom right, under cover+overlay) -->
@@ -277,7 +277,7 @@ const getEjsCore = _gd.getEjsCore
 
 interface Platform { id:number; slug:string; fs_slug:string; name:string; rom_count:number; description:string|null; manufacturer:string|null; release_year_platform:number|null; generation:number|null; wheel_path:string|null }
 interface Rom { id:number; slug:string; title:string; cover_path:string|null; background_path:string|null; wheel_path:string|null; video_path:string|null; release_year:number|null; bezel_path:string|null }
-interface Detail { description:string|null; screenshots:string[]|null; developer:string|null; developer_ss_id:number|null; publisher:string|null; publisher_ss_id:number|null; genres:string[]|null; ss_score:number|null; wheel_path:string|null; hltb_main_s:number|null; hltb_extra_s:number|null; hltb_complete_s:number|null; player_count:number|null; release_year:number|null }
+interface Detail { description:string|null; screenshots:string[]|null; developer:string|null; developer_ss_id:number|null; publisher:string|null; publisher_ss_id:number|null; genres:string[]|null; ss_score:number|null; wheel_path:string|null; video_path:string|null; hltb_main_s:number|null; hltb_extra_s:number|null; hltb_complete_s:number|null; player_count:number|null; release_year:number|null }
 
 // Plugin asset URL helper
 const PLUGIN_ID = 'neon-horizon'
@@ -331,7 +331,7 @@ const detail = ref<Detail|null>(null)
 const cache = new Map<number,Detail>()
 
 // ── Favorites & Recently Played ──────────────────────────────────
-interface SavedRom { id:number; title:string; cover_path:string|null; cover_aspect:string|null; platform_slug:string; platform_fs_slug:string; platform_name:string }
+interface SavedRom { id:number; title:string; cover_path:string|null; cover_aspect:string|null; video_path:string|null; background_path:string|null; platform_slug:string; platform_fs_slug:string; platform_name:string }
 
 const favorites = ref<SavedRom[]>(JSON.parse(localStorage.getItem('nh_couch_favorites')||'[]'))
 const recentlyPlayed = ref<SavedRom[]>(JSON.parse(localStorage.getItem('nh_couch_recent')||'[]'))
@@ -341,6 +341,17 @@ function saveRecent() { localStorage.setItem('nh_couch_recent', JSON.stringify(r
 
 function isFavorite(romId: number): boolean { return favorites.value.some(f => f.id === romId) }
 function fmtHltb(s: number): string { const h = Math.floor(s/3600); const m = Math.round((s%3600)/60); return h > 0 ? `${h}h ${m}m` : `${m}m` }
+
+// Resolve platform fs_slug for selected ROM (works in favorites/recent too)
+const selectedRomPlatformFsSlug = computed(() => {
+  if (state.value === 'favorites' || state.value === 'recent') {
+    const rom = selectedRom.value
+    if (!rom) return ''
+    const saved = [...favorites.value, ...recentlyPlayed.value].find(f => f.id === rom.id)
+    return saved?.platform_fs_slug || ''
+  }
+  return currentPlatform.value?.fs_slug || ''
+})
 
 // Auto-scroll description if overflowing
 let _descScrollTimer: ReturnType<typeof setInterval>|null = null
@@ -379,7 +390,8 @@ function toggleFavorite() {
     const saved = [...favorites.value, ...recentlyPlayed.value].find(f => f.id === rom.id)
     favorites.value.unshift({
       id: rom.id, title: rom.title, cover_path: rom.cover_path,
-      cover_aspect: rom.cover_aspect,
+      cover_aspect: rom.cover_aspect, video_path: rom.video_path || null,
+      background_path: rom.background_path || null,
       platform_slug: plat?.slug || saved?.platform_slug || '',
       platform_fs_slug: plat?.fs_slug || saved?.platform_fs_slug || '',
       platform_name: plat?.name || saved?.platform_name || '',
@@ -393,7 +405,8 @@ function addToRecent(rom: Rom, plat: Platform) {
   if (existing >= 0) recentlyPlayed.value.splice(existing, 1)
   recentlyPlayed.value.unshift({
     id: rom.id, title: rom.title, cover_path: rom.cover_path,
-    cover_aspect: rom.cover_aspect, platform_slug: plat.slug,
+    cover_aspect: rom.cover_aspect, video_path: rom.video_path || null,
+    background_path: rom.background_path || null, platform_slug: plat.slug,
     platform_fs_slug: plat.fs_slug, platform_name: plat.name,
   })
   if (recentlyPlayed.value.length > 50) recentlyPlayed.value.length = 50
@@ -403,13 +416,13 @@ function addToRecent(rom: Rom, plat: Platform) {
 // Current list for favorites/recent views (reuse roms array)
 function enterFavorites() {
   stopCycle()
-  roms.value = favorites.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:null, wheel_path:null, video_path:null, release_year:null, bezel_path:null }))
+  roms.value = favorites.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:null, bezel_path:null }))
   romIdx.value = 0; detail.value = null
   state.value = 'favorites'
 }
 function enterRecent() {
   stopCycle()
-  roms.value = recentlyPlayed.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:null, wheel_path:null, video_path:null, release_year:null, bezel_path:null }))
+  roms.value = recentlyPlayed.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:null, bezel_path:null }))
   romIdx.value = 0; detail.value = null
   state.value = 'recent'
 }
@@ -485,7 +498,10 @@ const glVideoRef = ref<HTMLVideoElement|null>(null)
 
 function onGlVideoCanPlay() {
   const el = glVideoRef.value
-  if (el && videoVolume.value > 0) {
+  if (!el) return
+  // Explicit play() needed for Edge/Chromium autoplay policy
+  el.play().catch(() => {})
+  if (videoVolume.value > 0) {
     el.volume = videoVolume.value / 100
     try { el.muted = false } catch {}
   }
@@ -500,9 +516,13 @@ const videoStyle = computed(() => {
   return { left: vp.x + '%', top: vp.y + '%', width: vp.w + '%', height: vp.h + '%' }
 })
 
-// Game list video: same positions work because overlay img uses object-fit:contain
-// Both system view and game list overlays render the image at same aspect ratio
-const glVideoStyle = computed(() => videoStyle.value)
+// Game list video: uses selectedRomPlatformFsSlug (works in favorites/recent too)
+const glVideoStyle = computed(() => {
+  const slug = selectedRomPlatformFsSlug.value
+  const vp = videoPosData.value[slug]
+  if (!vp) return { left: '45%', top: '30%', width: '30%', height: '25%' }
+  return { left: vp.x + '%', top: vp.y + '%', width: vp.w + '%', height: vp.h + '%' }
+})
 
 // Wheel logo: same left + width as video, centered inside
 const wheelStyle = computed(() => {
@@ -674,7 +694,7 @@ async function fetchRoms(){
 let dt:ReturnType<typeof setTimeout>|null=null
 async function loadRom(rom:Rom){
   if(cache.has(rom.id)){detail.value=cache.get(rom.id)!;return}
-  try{const{data}=await client.get(`/roms/${rom.id}`);const d:Detail={description:data.summary??null,screenshots:data.screenshots??null,developer:data.developer??null,developer_ss_id:data.developer_ss_id??null,publisher:data.publisher??null,publisher_ss_id:data.publisher_ss_id??null,genres:data.genres??null,ss_score:data.ss_score??null,wheel_path:data.wheel_path??null,hltb_main_s:data.hltb_main_s??null,hltb_extra_s:data.hltb_extra_s??null,hltb_complete_s:data.hltb_complete_s??null,player_count:data.player_count??null,release_year:data.release_year??null};cache.set(rom.id,d);if(selectedRom.value?.id===rom.id)detail.value=d}catch{}
+  try{const{data}=await client.get(`/roms/${rom.id}`);const d:Detail={description:data.summary??null,screenshots:data.screenshots??null,developer:data.developer??null,developer_ss_id:data.developer_ss_id??null,publisher:data.publisher??null,publisher_ss_id:data.publisher_ss_id??null,genres:data.genres??null,ss_score:data.ss_score??null,wheel_path:data.wheel_path??null,video_path:data.video_path??null,hltb_main_s:data.hltb_main_s??null,hltb_extra_s:data.hltb_extra_s??null,hltb_complete_s:data.hltb_complete_s??null,player_count:data.player_count??null,release_year:data.release_year??null};cache.set(rom.id,d);if(selectedRom.value?.id===rom.id)detail.value=d}catch{}
 }
 
 function goSys(dir:number){const n=sysIdx.value+dir;if(n>=0&&n<platforms.value.length){sysIdx.value=n;loadDetail(n)}}

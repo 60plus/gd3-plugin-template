@@ -66,13 +66,13 @@
           <div v-else class="nh-bp-bg-fallback" />
         </div>
         <div class="nh-bp-gradient" />
-        <img v-if="itemCover(item) && itemBackground(item)" :src="itemCover(item)" class="nh-bp-thumb" loading="lazy" alt="" />
+        <img v-if="itemThumb(item)" :src="itemThumb(item)" class="nh-bp-thumb" loading="lazy" alt="" />
         <div v-if="itemRating(item)" class="nh-bp-rating">{{ itemRating(item) }}</div>
         <div v-if="itemBadge(item)" class="nh-bp-badge-dl">✓</div>
         <div class="nh-bp-info">
           <div class="nh-bp-title">{{ itemTitle(item) }}</div>
           <div v-if="itemMeta(item)" class="nh-bp-meta">{{ itemMeta(item) }}</div>
-          <div v-if="itemGenres(item)" class="nh-bp-genres">
+          <div v-if="itemGenres(item) && coverSize !== 's' && coverSize !== 'm'" class="nh-bp-genres">
             <span v-for="g in itemGenres(item).slice(0, 3)" :key="g" class="nh-bp-genre">{{ g }}</span>
           </div>
         </div>
@@ -307,12 +307,22 @@ function gogCover(g: any): string {
 }
 function itemCover(item: any): string { return libType.value === 'gog' ? gogCover(item) : (item.cover_path || '') }
 function itemBackground(item: any): string { return item.background_path || '' }
+function itemThumb(item: any): string {
+  const cover = itemCover(item)
+  if (!cover) return ''
+  const bg = itemBackground(item)
+  // No background → cover is used as card bg, skip thumb to avoid duplicate
+  if (!bg) return ''
+  if (cover !== bg) return cover
+  // cover === background — try cover_url (original GOG cover)
+  if (item.cover_url) return gogCover({ ...item, cover_path: null })
+  return ''
+}
 function itemTitle(item: any): string { return (libType.value === 'emulation' || libType.value === 'emulation-home') ? (item.name || '') : (item.title || '') }
 function itemRating(item: any): string {
   const r = item.rating
-  if (!r) return ''
-  if (libType.value === 'gog') return (r / 10).toFixed(1)
-  return typeof r === 'number' && r > 0 ? (r > 10 ? (r / 20).toFixed(1) : r.toFixed(1)) : ''
+  if (!r || typeof r !== 'number') return ''
+  return r.toFixed(1)
 }
 function itemMeta(item: any): string {
   const parts: string[] = []
@@ -423,12 +433,13 @@ onMounted(fetchData)
 .nh-bp-gradient { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(5,5,15,.5) 60%, rgba(5,5,15,.92) 100%); z-index: 1; }
 .nh-bp-gradient--plat { background: linear-gradient(180deg, rgba(5,5,15,.2) 0%, rgba(5,5,15,.4) 40%, rgba(5,5,15,.9) 100%); }
 
-.nh-bp-thumb { position: absolute; top: 10px; left: 10px; width: 48px; height: 64px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); box-shadow: 0 4px 16px rgba(0,0,0,.6); z-index: 2; opacity: .85; transition: opacity .2s; }
+/* Thumb scales: XL=128x180, L=100x140, M=76x106, S=56x78 */
+.nh-bp-thumb { position: absolute; top: calc(var(--nh-bp-min, 520px) * 0.019); left: calc(var(--nh-bp-min, 520px) * 0.019); width: calc(var(--nh-bp-min, 520px) * 0.246); height: calc(var(--nh-bp-min, 520px) * 0.346); object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); box-shadow: 0 4px 16px rgba(0,0,0,.6); z-index: 2; opacity: .85; transition: opacity .2s; }
 .nh-bp-card:hover .nh-bp-thumb { opacity: 1; }
 
 .nh-bp-rating { position: absolute; top: 10px; right: 10px; padding: 3px 10px; border-radius: 3px; background: rgba(0,0,0,.75); border: 1px solid var(--pl); font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; color: var(--pl); z-index: 2; box-shadow: 0 0 8px var(--pglow2); }
 
-.nh-bp-badge-dl { position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--ok, #22c55e); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.nh-bp-badge-dl { position: absolute; bottom: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; background: var(--ok, #22c55e); color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
 
 .nh-bp-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; z-index: 2; display: flex; flex-direction: column; gap: 4px; }
 .nh-bp-info--plat { align-items: center; text-align: center; }
@@ -467,7 +478,6 @@ onMounted(fetchData)
   .nh-lib { padding: 0 12px 32px; }
   .nh-bp-grid { gap: 10px; }
   .nh-bp-title { font-size: 12px; }
-  .nh-bp-thumb { width: 36px; height: 48px; }
   .nh-alpha { display: none; }
 }
 </style>
