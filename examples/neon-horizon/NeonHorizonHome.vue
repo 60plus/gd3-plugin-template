@@ -546,7 +546,7 @@ onUnmounted(stopHeroRotation)
 }
 
 .nh-cover-img {
-  width: 100%; height: 100%; object-fit: cover;
+  width: 100%; height: 100%; object-fit: fill;
   transition: transform .3s;
 }
 .nh-cover-card:hover .nh-cover-img { transform: scale(1.06); }

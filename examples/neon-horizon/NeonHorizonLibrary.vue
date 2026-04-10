@@ -434,7 +434,7 @@ onMounted(fetchData)
 .nh-bp-gradient--plat { background: linear-gradient(180deg, rgba(5,5,15,.2) 0%, rgba(5,5,15,.4) 40%, rgba(5,5,15,.9) 100%); }
 
 /* Thumb scales: XL=128x180, L=100x140, M=76x106, S=56x78 */
-.nh-bp-thumb { position: absolute; top: calc(var(--nh-bp-min, 520px) * 0.019); left: calc(var(--nh-bp-min, 520px) * 0.019); width: calc(var(--nh-bp-min, 520px) * 0.246); height: calc(var(--nh-bp-min, 520px) * 0.346); object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); box-shadow: 0 4px 16px rgba(0,0,0,.6); z-index: 2; opacity: .85; transition: opacity .2s; }
+.nh-bp-thumb { position: absolute; top: calc(var(--nh-bp-min, 520px) * 0.019); left: calc(var(--nh-bp-min, 520px) * 0.019); max-width: calc(var(--nh-bp-min, 520px) * 0.246); max-height: calc(var(--nh-bp-min, 520px) * 0.346); width: auto; height: auto; object-fit: contain; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); box-shadow: 0 4px 16px rgba(0,0,0,.6); z-index: 2; opacity: .85; transition: opacity .2s; }
 .nh-bp-card:hover .nh-bp-thumb { opacity: 1; }
 
 .nh-bp-rating { position: absolute; top: 10px; right: 10px; padding: 3px 10px; border-radius: 3px; background: rgba(0,0,0,.75); border: 1px solid var(--pl); font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; color: var(--pl); z-index: 2; box-shadow: 0 0 8px var(--pglow2); }

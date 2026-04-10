@@ -103,9 +103,10 @@
 
     <!-- ═══ GAME LIST — list-video (Pop style: text list + big image) ══ -->
     <template v-if="state === 'games-list' || ((state === 'favorites' || state === 'recent') && gameView === 'list')">
-      <div class="cp-bg" />
       <!-- Colored panel behind list -->
-      <div class="cp-gl-panel" />
+      <div class="cp-gl-panel">
+        <div class="cp-gl-panel-count">{{ roms.length }} {{ roms.length === 1 ? 'Game' : 'Games' }}</div>
+      </div>
 
       <!-- System logo (top, above list) -->
       <div class="cp-gl-syslogo-wrap">
@@ -208,19 +209,61 @@
       </div>
       <div class="cp-gc-dim" />
 
-      <!-- System name (top left) -->
-      <div class="cp-gc-sysname">{{ state === 'favorites' ? '★ Favorites' : state === 'recent' ? '⏱ Recently Played' : currentPlatform?.name || '' }}</div>
+      <!-- System name (top left) — SVG logo for platforms, text for favorites/recent -->
+      <div class="cp-gc-sysname">
+        <template v-if="state === 'favorites'"><span>★ Favorites</span></template>
+        <template v-else-if="state === 'recent'"><span>⏱ Recently Played</span></template>
+        <template v-else>
+          <img :src="'/platforms/names/' + (currentPlatform?.fs_slug||'') + '.svg'" class="cp-gc-syslogo" @error="(e:any) => { e.target.style.display='none'; e.target.nextElementSibling.style.display='inline' }" />
+          <span style="display:none">{{ currentPlatform?.name || '' }}</span>
+        </template>
+      </div>
 
-      <!-- Game name (bottom left, big) -->
-      <div class="cp-gc-gamename">{{ selectedRom?.title || '' }}</div>
+      <!-- Description panel (top right, glass) — only for platform games, not favorites/recent -->
+      <div v-if="detail?.description && state !== 'favorites' && state !== 'recent'" class="cp-gc-desc" :style="{ borderColor: sysColor + '30', bottom: gcInfoStyle.bottom }">
+        {{ detail.description }}
+      </div>
 
-      <!-- Year (bottom left, small) -->
-      <div class="cp-gc-year">{{ selectedRom?.release_year || '' }}</div>
+      <!-- Game info (centered above covers) — fade on game change -->
+      <transition name="cp-gc-fade" mode="out-in">
+        <div class="cp-gc-info" v-if="selectedRom" :key="selectedRom.id" :style="gcInfoStyle">
+          <div class="cp-gc-gamename">{{ selectedRom.title }}</div>
+          <div v-if="selectedRom.ss_score" class="cp-gc-rating">{{ '★'.repeat(Math.round(selectedRom.ss_score / 4)) }}{{ '☆'.repeat(5 - Math.round(selectedRom.ss_score / 4)) }}</div>
+          <div class="cp-gc-meta">
+            <span v-if="selectedRom.release_year">{{ selectedRom.release_year }}</span>
+            <span v-if="selectedRom.player_count">{{ selectedRom.player_count }} Player{{ selectedRom.player_count > 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Counter: bottom-right -->
+      <div class="cp-gc-counter">{{ romIdx + 1 }} of {{ roms.length }}</div>
+
+      <!-- Clock: top-right -->
+      <div class="cp-gc-clock">{{ currentTime }}</div>
+
+      <!-- Cover carousel — absolute positioned, slides on romIdx change -->
+      <div class="cp-gc-strip">
+        <div
+          v-for="slot in carouselCovers" :key="slot.key"
+          class="cp-gc-cover"
+          :class="{ 'cp-gc-cover--center': slot.offset === 0, 'cp-gc-cover--hidden': Math.abs(slot.offset) > 5 }"
+          :style="{
+            transform: 'translateX(' + (slot.offset * 15) + 'vw) scale(' + Math.max(0.3, 1.0 - Math.abs(slot.offset) * 0.13) + ')',
+            opacity: Math.max(0.05, 1.0 - Math.abs(slot.offset) * 0.2),
+            zIndex: 10 - Math.abs(slot.offset),
+          }"
+        >
+          <img v-if="slot.rom?.cover_path" :src="slot.rom.cover_path" class="cp-gc-cover-img" @error="(e:any) => e.target.style.opacity='0'" />
+          <div v-else-if="slot.rom" class="cp-gc-cover-ph"><span>{{ slot.rom.title.charAt(0) }}</span></div>
+        </div>
+      </div>
 
       <div class="cp-help">
         <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> Games</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> Play</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> Back</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> Favorite</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> Menu</span>
       </div>
     </template>
@@ -266,7 +309,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 const _gd = (window as any).__GD__
@@ -276,7 +319,7 @@ const { useCouchNav, couchNavPaused } = _gd.composables
 const getEjsCore = _gd.getEjsCore
 
 interface Platform { id:number; slug:string; fs_slug:string; name:string; rom_count:number; description:string|null; manufacturer:string|null; release_year_platform:number|null; generation:number|null; wheel_path:string|null }
-interface Rom { id:number; slug:string; title:string; cover_path:string|null; background_path:string|null; wheel_path:string|null; video_path:string|null; release_year:number|null; bezel_path:string|null }
+interface Rom { id:number; slug:string; title:string; cover_path:string|null; background_path:string|null; wheel_path:string|null; video_path:string|null; release_year:number|null; bezel_path:string|null; ss_score:number|null; player_count:number|null; genres:string[]|null }
 interface Detail { description:string|null; screenshots:string[]|null; developer:string|null; developer_ss_id:number|null; publisher:string|null; publisher_ss_id:number|null; genres:string[]|null; ss_score:number|null; wheel_path:string|null; video_path:string|null; hltb_main_s:number|null; hltb_extra_s:number|null; hltb_complete_s:number|null; player_count:number|null; release_year:number|null }
 
 // Plugin asset URL helper
@@ -331,7 +374,7 @@ const detail = ref<Detail|null>(null)
 const cache = new Map<number,Detail>()
 
 // ── Favorites & Recently Played ──────────────────────────────────
-interface SavedRom { id:number; title:string; cover_path:string|null; cover_aspect:string|null; video_path:string|null; background_path:string|null; platform_slug:string; platform_fs_slug:string; platform_name:string }
+interface SavedRom { id:number; title:string; cover_path:string|null; cover_aspect:string|null; video_path:string|null; background_path:string|null; platform_slug:string; platform_fs_slug:string; platform_name:string; ss_score:number|null; player_count:number|null; release_year:number|null }
 
 const favorites = ref<SavedRom[]>(JSON.parse(localStorage.getItem('nh_couch_favorites')||'[]'))
 const recentlyPlayed = ref<SavedRom[]>(JSON.parse(localStorage.getItem('nh_couch_recent')||'[]'))
@@ -358,8 +401,8 @@ let _descScrollTimer: ReturnType<typeof setInterval>|null = null
 function startDescAutoScroll() {
   stopDescAutoScroll()
   _descScrollTimer = setTimeout(() => {
-    const el = document.querySelector('.cp-gl-info-desc') as HTMLElement
-    if (!el || el.scrollHeight <= el.clientHeight) return
+    const el = (document.querySelector('.cp-gl-info-desc') || document.querySelector('.cp-gc-desc')) as HTMLElement
+    if (!el || el.scrollHeight - el.clientHeight < 10) return
     let dir = 1
     _descScrollTimer = setInterval(() => {
       el.scrollTop += dir
@@ -395,6 +438,9 @@ function toggleFavorite() {
       platform_slug: plat?.slug || saved?.platform_slug || '',
       platform_fs_slug: plat?.fs_slug || saved?.platform_fs_slug || '',
       platform_name: plat?.name || saved?.platform_name || '',
+      ss_score: rom.ss_score ?? saved?.ss_score ?? null,
+      player_count: rom.player_count ?? saved?.player_count ?? null,
+      release_year: rom.release_year ?? saved?.release_year ?? null,
     })
   }
   saveFavorites()
@@ -408,6 +454,8 @@ function addToRecent(rom: Rom, plat: Platform) {
     cover_aspect: rom.cover_aspect, video_path: rom.video_path || null,
     background_path: rom.background_path || null, platform_slug: plat.slug,
     platform_fs_slug: plat.fs_slug, platform_name: plat.name,
+    ss_score: rom.ss_score ?? null, player_count: rom.player_count ?? null,
+    release_year: rom.release_year ?? null,
   })
   if (recentlyPlayed.value.length > 50) recentlyPlayed.value.length = 50
   saveRecent()
@@ -416,15 +464,15 @@ function addToRecent(rom: Rom, plat: Platform) {
 // Current list for favorites/recent views (reuse roms array)
 function enterFavorites() {
   stopCycle()
-  roms.value = favorites.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:null, bezel_path:null }))
+  roms.value = favorites.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:f.release_year??null, bezel_path:null, ss_score:f.ss_score??null, player_count:f.player_count??null, genres:null }))
   romIdx.value = 0; detail.value = null
-  state.value = 'favorites'
+  state.value = 'favorites'; updateCenterCoverHeight()
 }
 function enterRecent() {
   stopCycle()
-  roms.value = recentlyPlayed.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:null, bezel_path:null }))
+  roms.value = recentlyPlayed.value.map(f => ({ id:f.id, slug:'', title:f.title, cover_path:f.cover_path, cover_aspect:f.cover_aspect, background_path:f.background_path||null, wheel_path:null, video_path:f.video_path||null, release_year:f.release_year??null, bezel_path:null, ss_score:f.ss_score??null, player_count:f.player_count??null, genres:null }))
   romIdx.value = 0; detail.value = null
-  state.value = 'recent'
+  state.value = 'recent'; updateCenterCoverHeight()
 }
 
 // Select button polling — same pattern as useCouchNav (requestAnimationFrame)
@@ -552,9 +600,9 @@ function applyVolume() {
   const el = videoRef.value
   if (!el) return
   el.volume = videoVolume.value / 100
-  // Unmute after autoplay started (user already interacted with page via gamepad/keyboard)
+  // Unmute after autoplay started — re-call play() because Edge/Chrome may pause on unmute
   if (videoVolume.value > 0) {
-    try { el.muted = false } catch { /* autoplay policy */ }
+    try { el.muted = false; el.play().catch(() => {}) } catch { /* autoplay policy */ }
   } else {
     el.muted = true
   }
@@ -651,7 +699,45 @@ function cycleIconAnimStyle() {
 }
 
 const currentPlatform = computed(()=>platforms.value[sysIdx.value]??null)
+
+// Clock
+const currentTime = ref(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+let _clockInterval: ReturnType<typeof setInterval> | null = null
+
+// Info position: computed from center cover height
+const centerCoverHeight = ref(0)
+function updateCenterCoverHeight() {
+  nextTick(() => {
+    const el = document.querySelector('.cp-gc-cover--center .cp-gc-cover-img') as HTMLElement
+    if (el) {
+      // Wait for image to load if needed
+      const img = el as HTMLImageElement
+      if (img.complete) { centerCoverHeight.value = img.offsetHeight }
+      else { img.onload = () => { centerCoverHeight.value = img.offsetHeight } }
+    }
+  })
+}
+const gcInfoStyle = computed(() => {
+  const stripBottom = 6 // % from CSS .cp-gc-strip bottom
+  const h = centerCoverHeight.value
+  if (!h) return { bottom: '50%' }
+  // position info just above the cover: strip bottom + cover height + gap
+  const px = (window.innerHeight * stripBottom / 100) + h + 16
+  return { bottom: px + 'px' }
+})
 const selectedRom = computed(()=>roms.value[romIdx.value]??null)
+
+// Carousel: wide window ±6 for smooth slide, keyed by rom.id
+const carouselCovers = computed(() => {
+  const len = roms.value.length, center = romIdx.value
+  const slots: { rom: any; offset: number; key: string }[] = []
+  for (let o = -6; o <= 6; o++) {
+    const idx = center + o
+    const rom = idx >= 0 && idx < len ? roms.value[idx] : null
+    slots.push({ rom, offset: o, key: rom ? String(rom.id) : `empty${o}` })
+  }
+  return slots
+})
 const sysColor = computed(()=>sysColorFromMeta.value||'#4466aa')
 
 const menuItemsGeneral = computed(()=>[
@@ -689,7 +775,7 @@ async function loadDetail(idx:number){
 }
 async function fetchRoms(){
   if(!currentPlatform.value)return
-  try{const{data}=await client.get('/roms',{params:{platform_slug:currentPlatform.value.slug,limit:500,offset:0}});roms.value=(data.items??(Array.isArray(data)?data:[])).map((r:any)=>({id:r.id,slug:r.slug,title:r.name||r.fs_name_no_ext,cover_path:r.cover_path,background_path:r.background_path,wheel_path:r.wheel_path,video_path:r.video_path,release_year:r.release_year,bezel_path:r.bezel_path}));romIdx.value=0;detail.value=null}catch(e){console.error('[CP]',e)}
+  try{const{data}=await client.get('/roms',{params:{platform_slug:currentPlatform.value.slug,limit:500,offset:0}});roms.value=(data.items??(Array.isArray(data)?data:[])).map((r:any)=>({id:r.id,slug:r.slug,title:r.name||r.fs_name_no_ext,cover_path:r.cover_path,background_path:r.background_path,wheel_path:r.wheel_path,video_path:r.video_path,release_year:r.release_year,bezel_path:r.bezel_path,ss_score:r.ss_score??null,player_count:r.player_count??null,genres:r.genres??null}));romIdx.value=0;detail.value=null;updateCenterCoverHeight()}catch(e){console.error('[CP]',e)}
 }
 let dt:ReturnType<typeof setTimeout>|null=null
 async function loadRom(rom:Rom){
@@ -725,7 +811,7 @@ function launchGame(){
 
 watch(sysIdx,(i)=>{loadDetail(i);nameLogoFailed.value=false;startCycle()})
 watch(videoUrl,(url)=>{ if(url) nextTick(()=>{ const el=videoRef.value; if(el){ el.play().then(()=>{ setTimeout(()=>applyVolume(),500) }).catch(()=>{}) } }) })
-watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;stopDescAutoScroll();if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})})})
+watch(romIdx,()=>{detail.value=null;shotIdx.value=-1;stopDescAutoScroll();if(dt)clearTimeout(dt);const r=selectedRom.value;if(r)dt=setTimeout(()=>loadRom(r),300);nextTick(()=>{(gameListRef.value?.querySelector('.cp-gl-row.selected') as HTMLElement)?.scrollIntoView({block:'nearest',behavior:'smooth'})});updateCenterCoverHeight()})
 watch(detail,()=>{if(detail.value?.description)nextTick(()=>startDescAutoScroll())})
 watch(gameView,(v)=>{if(state.value.startsWith('games-'))state.value=v==='list'?'games-list':'games-carousel'})
 
@@ -740,7 +826,8 @@ useCouchNav({
   x:()=>{if(detail.value?.screenshots?.length&&state.value.startsWith('games-'))shotIdx.value=0},
 })
 
-onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});pollNhSettings();loadPlatformsJson();loadVideoPos();fetchPlatforms().then(()=>startCycle());_selFrame=requestAnimationFrame(pollSelectButton);document.addEventListener('keydown',onKeyFavorite)})
+onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});pollNhSettings();loadPlatformsJson();loadVideoPos();fetchPlatforms().then(()=>startCycle());_selFrame=requestAnimationFrame(pollSelectButton);document.addEventListener('keydown',onKeyFavorite);_clockInterval=setInterval(()=>{currentTime.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})},10000)})
+onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 </script>
 
 <style scoped>
@@ -817,31 +904,32 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 
 /* ═══ GAME LIST — list-video style ═══════════════════════════════════ */
 /* Color panel: 2.6%, 4.6%, 37% wide (list only, not full 56%) */
-.cp-gl-panel{position:absolute;left:2.6%;top:4.6%;width:28%;height:90.8%;z-index:1;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.2));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:6px}
+.cp-gl-panel{position:absolute;left:2.6%;top:4.6%;width:28%;height:90.8%;z-index:1;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:6px}
+.cp-gl-panel-count{position:absolute;right:12px;bottom:10px;font-family:'Orbitron',sans-serif;font-size:clamp(10px,1.3vh,13px);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.25)}
 
 /* System logo: icon + SVG name, top of list */
-.cp-gl-syslogo-wrap{position:absolute;left:5.2%;top:7%;z-index:10;display:flex;align-items:center;gap:10px}
+.cp-gl-syslogo-wrap{position:absolute;left:2.6%;top:7%;width:28%;z-index:10;display:flex;align-items:center;justify-content:center;gap:10px}
 .cp-gl-syslogo-icon{height:clamp(28px,5vh,48px);width:auto}
 .cp-gl-syslogo-name{height:clamp(20px,3.5vh,36px);width:auto;max-width:20vw;filter:brightness(0) invert(1)}
 
 /* Text list: just names, rounded pill for selected */
-.cp-gl-list{position:absolute;left:5.2%;top:18%;width:22%;height:74%;z-index:10;overflow-y:auto;scrollbar-width:none}
+.cp-gl-list{position:absolute;left:2.6%;top:12%;width:28%;height:80%;z-index:10;overflow-y:auto;scrollbar-width:none}
 .cp-gl-list::-webkit-scrollbar{display:none}
-.cp-gl-row{padding:7px 16px;font-size:clamp(14px,2.2vh,20px);font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:99px;margin-bottom:1px;transition:background .1s}
+.cp-gl-row{padding:7px 16px;font-size:clamp(14px,2.2vh,20px);font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;border-radius:99px;margin-bottom:1px;transition:background .1s}
 .cp-gl-row:not(.selected){color:rgba(255,255,255,.45)}
-.cp-gl-row.selected{background:rgba(255,255,255,.95);color:var(--sys-color,#4466aa)}
+.cp-gl-row.selected{background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;border-radius:4px}
 .cp-gl-fav-star{color:#c9a84c;margin-right:4px;font-size:1.1em}
 .cp-gl-panel--glass{background:color-mix(in srgb, var(--pl,#00d4ff) 10%, rgba(0,0,0,.2))!important;backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.06)}
 .cp-sys-special-title{font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vh,28px);font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 
 /* Big image on right (like list-video in Pop: screenshot centered in color block area) */
 /* Hero background behind cover + overlay area */
-.cp-gl-hero{position:absolute;left:30.6%;top:4.5%;right:0;height:91%;z-index:1;overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 5%,black 95%,transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 5%,black 95%,transparent 100%)}
+.cp-gl-hero{position:absolute;inset:0;z-index:0;overflow:hidden}
 .cp-gl-hero-img{position:absolute;inset:-5%;width:110%;height:110%;object-fit:cover;opacity:.25;filter:brightness(.5) saturate(1.2);animation:cp-kenburns 30s ease-in-out infinite alternate}
 .cp-gl-hero-img--static{animation:none;inset:0;width:100%;height:100%}
 .cp-gl-hero-fade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,var(--bg,#05050f) 100%);z-index:1}
 
-.cp-gl-bigimage{position:absolute;left:3%;top:0;width:28%;height:75%;z-index:2;display:flex;align-items:flex-start;justify-content:center;padding-top:3%;overflow:hidden}
+.cp-gl-bigimage{position:absolute;left:32%;top:0;width:22%;height:75%;z-index:2;display:flex;align-items:flex-start;justify-content:center;padding-top:3%;overflow:hidden}
 .cp-gl-bigimage-img{max-width:95%;max-height:95%;object-fit:contain;border-radius:4px;box-shadow:0 0 15px var(--sys-color),0 4px 16px rgba(0,0,0,.4)}
 
 /* Overlay + video on right side of game list */
@@ -863,21 +951,60 @@ onMounted(()=>{document.documentElement.requestFullscreen?.().catch(()=>{});poll
 .cp-gl-info-company{display:inline-flex;align-items:center;gap:8px}
 .cp-gl-info-company-logo{height:clamp(22px,3.5vh,36px);width:auto;max-width:120px;object-fit:contain;filter:brightness(0) invert(1);opacity:.7}
 .cp-gl-info-sep{color:rgba(255,255,255,.25)}
-.cp-gl-info-desc{font-size:clamp(13px,1.7vh,17px);color:rgba(255,255,255,.55);line-height:1.6;max-height:13vh;overflow-y:auto;scrollbar-width:none;padding:12px 16px;border-radius:6px;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.2));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05)}
+.cp-gl-info-desc{font-size:clamp(13px,1.7vh,17px);color:rgba(255,255,255,.5);line-height:1.6;max-height:13vh;overflow-y:auto;scrollbar-width:none;padding:12px 16px;border-radius:6px;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05)}
 .cp-gl-info-desc::-webkit-scrollbar{display:none}
 .cp-gl-info-hltb{display:flex;gap:16px;font-size:clamp(13px,1.6vh,16px);color:rgba(255,255,255,.4)}
 
-/* ═══ GAME CAROUSEL — full-screen artwork ════════════════════════════ */
+/* ═══ GAME CAROUSEL — Colorful Pop style ═════════════════════════════ */
 .cp-gc-bg{position:absolute;inset:0;z-index:0}
-.cp-gc-bg-img{width:100%;height:100%;object-fit:cover;filter:brightness(.5)}
-.cp-gc-dim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.7) 100%)}
+.cp-gc-bg-img{width:100%;height:100%;object-fit:cover;filter:brightness(.4) saturate(1.1)}
+.cp-gc-dim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.05) 30%,rgba(0,0,0,.4) 70%,rgba(0,0,0,.8) 100%)}
 
 /* System name: top left */
-.cp-gc-sysname{position:absolute;left:2.6%;top:4.6%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(12px,2vh,20px);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5)}
-/* Game name: bottom left, BIG */
-.cp-gc-gamename{position:absolute;left:2.6%;bottom:16%;width:40%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vh,64px);font-weight:900;line-height:1.05;text-shadow:0 2px 16px rgba(0,0,0,.8)}
-/* Year: below game name */
-.cp-gc-year{position:absolute;left:2.6%;bottom:10%;z-index:10;font-size:clamp(12px,1.8vh,16px);color:rgba(255,255,255,.4)}
+.cp-gc-sysname{position:absolute;left:3%;top:4%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(13px,2.2vh,22px);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5)}
+.cp-gc-syslogo{height:clamp(24px,4vh,44px);width:auto;filter:brightness(0) invert(1);opacity:.7}
+
+/* Description panel: top-right, glass with platform color */
+.cp-gc-desc{position:absolute;right:5%;width:28%;max-height:calc(clamp(12px,1.5vh,15px) * 1.6 * 10 + 28px);z-index:10;padding:14px 16px;border-radius:8px;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid;font-size:clamp(12px,1.5vh,15px);line-height:1.6;color:rgba(255,255,255,.5);overflow-y:auto;scrollbar-width:none;transition:bottom .4s}
+.cp-gc-desc::-webkit-scrollbar{display:none}
+
+/* Game info: centered above the main cover — bottom set dynamically by gcInfoStyle */
+.cp-gc-info{position:absolute;left:50%;transform:translateX(-50%);width:60%;z-index:12;text-align:center;transition:bottom .4s ease}
+.cp-gc-gamename{font-family:'Orbitron',sans-serif;font-size:clamp(24px,5vh,56px);font-weight:900;line-height:1.08;text-shadow:0 2px 20px rgba(0,0,0,.9);margin-bottom:8px}
+.cp-gc-gamename{font-size:clamp(22px,4.5vh,52px);margin-bottom:4px}
+.cp-gc-rating{font-size:clamp(16px,2.4vh,24px);color:#c9a84c;letter-spacing:2px;margin-bottom:6px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.cp-gc-meta{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:clamp(13px,1.8vh,18px);color:rgba(255,255,255,.45)}
+.cp-gc-counter{position:absolute;right:3%;bottom:48px;z-index:50;font-family:'Orbitron',sans-serif;font-size:clamp(10px,1.4vh,14px);font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.25)}
+.cp-gc-clock{position:absolute;right:3%;top:4%;z-index:10;font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vh,22px);font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.08em}
+
+/* Info fade animation on game change */
+.cp-gc-fade-enter-active{transition:opacity .3s ease, transform .3s ease}
+.cp-gc-fade-leave-active{transition:opacity .2s ease, transform .2s ease}
+.cp-gc-fade-enter-from{opacity:0;transform:translateX(-50%) translateY(8px)}
+.cp-gc-fade-leave-to{opacity:0;transform:translateX(-50%) translateY(-8px)}
+
+/* Cover strip: anchor at center-bottom */
+.cp-gc-strip{position:absolute;left:50%;bottom:6%;z-index:10;width:0;height:0}
+
+/* Cover: absolute, slides via translateX keyed by rom.id */
+.cp-gc-cover{
+  position:absolute;
+  bottom:0;left:0;
+  margin-left:calc(clamp(240px, 14vw, 440px) / -2);
+  transform-origin:bottom center;
+  transition:transform .45s cubic-bezier(.25,.46,.45,.94), opacity .4s ease, filter .4s ease;
+}
+.cp-gc-cover--center{
+  filter:drop-shadow(0 0 24px rgba(0,0,0,.6)) drop-shadow(0 0 40px var(--sys-color, rgba(0,180,255,.3)));
+}
+.cp-gc-cover--hidden{visibility:hidden;pointer-events:none}
+
+/* Cover image: big, width-based */
+.cp-gc-cover-img{width:clamp(240px,14vw,440px);height:auto;max-height:clamp(260px,48vh,520px);object-fit:contain;border-radius:5px;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.cp-gc-cover--center .cp-gc-cover-img{border-radius:7px;border:2px solid rgba(255,255,255,.15);box-shadow:0 10px 40px rgba(0,0,0,.7)}
+
+/* Placeholder */
+.cp-gc-cover-ph{width:clamp(240px,14vw,440px);aspect-ratio:3/4;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:clamp(20px,3vw,40px);font-weight:900;color:rgba(255,255,255,.12)}
 
 /* ═══ HELP BAR ════════════════════════════════════════════════════ */
 .cp-help{position:absolute;bottom:0;left:0;right:0;z-index:50;padding:12px 0;display:flex;gap:32px;justify-content:center;font-size:16px;color:rgba(255,255,255,.4);letter-spacing:.02em;align-items:center}
