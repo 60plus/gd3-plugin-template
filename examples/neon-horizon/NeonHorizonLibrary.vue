@@ -451,12 +451,13 @@ onMounted(fetchData)
 
 /* ═══ PLATFORM CARDS ═══════════════════════════════════════════════════ */
 .nh-bp-plat-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); z-index: 2; }
-.nh-bp-plat-icon { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 0 12px var(--pglow, rgba(0,212,255,.4))); transition: transform .3s; }
+/* Icon, logo, count scale with --nh-bp-min (S=240 M=320 L=420 XL=520) */
+.nh-bp-plat-icon { width: calc(var(--nh-bp-min, 320px) * 0.22); height: calc(var(--nh-bp-min, 320px) * 0.22); object-fit: contain; filter: drop-shadow(0 0 16px var(--pglow, rgba(0,212,255,.4))); transition: transform .3s; }
 .nh-bp-card--plat:hover .nh-bp-plat-icon { transform: scale(1.15); }
 
-.nh-bp-plat-logo { height: 18px; width: auto; max-width: 140px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 0 6px var(--pglow)); }
-.nh-bp-plat-name-text { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 0 8px var(--pglow); }
-.nh-bp-plat-count { padding: 3px 12px; border-radius: 3px; background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff)); font-family: 'Orbitron', sans-serif; font-size: 9px; font-weight: 700; color: #fff; letter-spacing: .04em; margin-top: 4px; }
+.nh-bp-plat-logo { height: calc(var(--nh-bp-min, 320px) * 0.065); width: auto; max-width: 80%; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 0 8px var(--pglow)); }
+.nh-bp-plat-name-text { font-family: 'Orbitron', sans-serif; font-size: calc(var(--nh-bp-min, 320px) * 0.04); font-weight: 700; color: #fff; text-shadow: 0 0 8px var(--pglow); }
+.nh-bp-plat-count { padding: calc(var(--nh-bp-min, 320px) * 0.012) calc(var(--nh-bp-min, 320px) * 0.04); border-radius: 4px; background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff)); font-family: 'Orbitron', sans-serif; font-size: calc(var(--nh-bp-min, 320px) * 0.03); font-weight: 700; color: #fff; letter-spacing: .04em; margin-top: calc(var(--nh-bp-min, 320px) * 0.02); }
 
 /* ═══ CARD EFFECT TOGGLES ══════════════════════════════════════════════ */
 .nh-bp-no-lift:hover { transform: none !important; }
