@@ -10,9 +10,21 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 20px;
-  --glass-blur-px: 20px;
-  --glass-sat: 180%;
+  /* glass-blur-px and glass-sat managed by theme store — do NOT set here */
   --navbar-blur-px: 16px;
+  /* Pre-computed glow sizes for box-shadow (calc inside box-shadow unreliable) */
+  --nh-glow-8:  8px;
+  --nh-glow-10: 10px;
+  --nh-glow-12: 12px;
+  --nh-glow-16: 16px;
+  --nh-glow-20: 20px;
+  --nh-glow-24: 24px;
+  --nh-glow-30: 30px;
+  --nh-glow-60: 60px;
+  /* NH orbs: bigger, slower, travel much further across screen */
+  --orb-travel: 3;
+  --orb-scale: 1.4;
+  --orb-speed-mult: 0.7;
 }
 
 
@@ -30,7 +42,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #38bdf8; --info-glow: rgba(56,189,248,.4);
   --border: rgba(0,212,255,.15);
-  --glass-bg: rgba(10,15,40,.75);
+  --glass-bg: rgba(10,15,40,.35);
   --glass-border: rgba(0,212,255,.12);
   --glass-highlight: rgba(0,212,255,.06);
   --scrollbar-thumb: rgba(0,212,255,.3);
@@ -45,7 +57,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #818cf8; --info-glow: rgba(129,140,248,.4);
   --border: rgba(123,47,255,.15);
-  --glass-bg: rgba(8,5,26,.75);
+  --glass-bg: rgba(8,5,26,.35);
   --glass-border: rgba(123,47,255,.12);
   --glass-highlight: rgba(123,47,255,.06);
   --scrollbar-thumb: rgba(123,47,255,.3);
@@ -60,7 +72,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #e879f9; --info-glow: rgba(232,121,249,.4);
   --border: rgba(224,64,251,.15);
-  --glass-bg: rgba(15,5,16,.75);
+  --glass-bg: rgba(15,5,16,.35);
   --glass-border: rgba(224,64,251,.12);
   --glass-highlight: rgba(224,64,251,.06);
   --scrollbar-thumb: rgba(224,64,251,.3);
@@ -75,7 +87,7 @@
   --danger: #ef4444; --warning: #fb923c;
   --info: #fbbf24; --info-glow: rgba(251,191,36,.4);
   --border: rgba(251,191,36,.15);
-  --glass-bg: rgba(12,10,5,.75);
+  --glass-bg: rgba(12,10,5,.35);
   --glass-border: rgba(251,191,36,.12);
   --glass-highlight: rgba(251,191,36,.06);
   --scrollbar-thumb: rgba(251,191,36,.3);
@@ -90,7 +102,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #38bdf8; --info-glow: rgba(56,189,248,.4);
   --border: rgba(0,212,255,.15);
-  --glass-bg: rgba(10,15,40,.75);
+  --glass-bg: rgba(10,15,40,.35);
   --glass-border: rgba(0,212,255,.12);
   --glass-highlight: rgba(0,212,255,.06);
   --scrollbar-thumb: rgba(0,212,255,.3);
@@ -105,7 +117,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #e879f9; --info-glow: rgba(232,121,249,.4);
   --border: rgba(224,64,251,.15);
-  --glass-bg: rgba(10,5,15,.75);
+  --glass-bg: rgba(10,5,15,.35);
   --glass-border: rgba(224,64,251,.12);
   --glass-highlight: rgba(224,64,251,.06);
   --scrollbar-thumb: rgba(224,64,251,.3);
@@ -120,7 +132,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #fb923c; --info-glow: rgba(251,146,60,.4);
   --border: rgba(249,115,22,.15);
-  --glass-bg: rgba(15,8,5,.75);
+  --glass-bg: rgba(15,8,5,.35);
   --glass-border: rgba(249,115,22,.12);
   --glass-highlight: rgba(249,115,22,.06);
   --scrollbar-thumb: rgba(249,115,22,.3);
@@ -135,7 +147,7 @@
   --danger: #ef4444; --warning: #fbbf24;
   --info: #34d399; --info-glow: rgba(52,211,153,.4);
   --border: rgba(34,197,94,.15);
-  --glass-bg: rgba(5,15,10,.75);
+  --glass-bg: rgba(5,15,10,.35);
   --glass-border: rgba(34,197,94,.12);
   --glass-highlight: rgba(34,197,94,.06);
   --scrollbar-thumb: rgba(34,197,94,.3);
@@ -166,10 +178,7 @@
   --transition-slow: .4s cubic-bezier(.25,.46,.45,.94);
 }
 
-/* Hide default ambient background — NeonHorizonLayout has its own */
-[data-theme="neon-horizon"] .ambient-bg {
-  display: none !important;
-}
+/* AmbientBackground component is used directly — do NOT hide it */
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -236,8 +245,7 @@
 [data-theme="neon-horizon"] .glass-panel,
 [data-theme="neon-horizon"] .glass-card {
   background: var(--glass-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  /* backdrop-filter managed by neon-horizon.js for reactive Glass Blur */
   border: 1px solid var(--glass-border) !important;
   border-radius: var(--radius) !important;
   box-shadow: 0 8px 32px rgba(0,0,0,.3), inset 0 1px 0 var(--glass-highlight) !important;
@@ -245,7 +253,7 @@
 
 [data-theme="neon-horizon"] .glass-card:hover {
   border-color: var(--pl) !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 24px var(--pglow2), inset 0 1px 0 var(--glass-highlight) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 var(--nh-glow-24, 24px) var(--pglow2), inset 0 1px 0 var(--glass-highlight) !important;
   transform: translateY(-6px) !important;
 }
 
@@ -262,10 +270,12 @@
 [data-theme="neon-horizon"] .sync-dlg-ok,
 [data-theme="neon-horizon"] .gl-btn--primary,
 [data-theme="neon-horizon"] .gd-confirm-btn:not(.gd-confirm-btn--ghost) {
-  background: linear-gradient(135deg, var(--pl), var(--pl2, var(--pl))) !important;
-  color: #fff !important;
-  border: none !important;
-  box-shadow: 0 4px 20px var(--pglow2) !important;
+  background: color-mix(in srgb, var(--pl) 20%, rgba(255,255,255,.06)) !important;
+  color: var(--pl) !important;
+  border: 1px solid color-mix(in srgb, var(--pl) 30%, transparent) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   transition: all .2s ease !important;
   font-weight: 700 !important;
 }
@@ -275,8 +285,10 @@
 [data-theme="neon-horizon"] .gd-btn-dl:hover,
 [data-theme="neon-horizon"] .sync-btn:hover,
 [data-theme="neon-horizon"] .emu-action-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 30px var(--pglow) !important;
+  background: color-mix(in srgb, var(--pl) 30%, rgba(255,255,255,.1)) !important;
+  border-color: color-mix(in srgb, var(--pl) 50%, transparent) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--pl) 20%, transparent) !important;
 }
 
 [data-theme="neon-horizon"] .gd-btn-ghost,
@@ -291,7 +303,7 @@
 [data-theme="neon-horizon"] .gl-btn--ghost:hover {
   border-color: var(--pl) !important;
   background: rgba(255,255,255,.08) !important;
-  box-shadow: 0 0 16px var(--pglow2) !important;
+  box-shadow: 0 0 var(--nh-glow-16, 16px) var(--pglow2) !important;
 }
 
 [data-theme="neon-horizon"] .gd-btn-danger {
@@ -308,8 +320,7 @@
 [data-theme="neon-horizon"] .home-lib-card {
   border: 1px solid var(--glass-border) !important;
   background: var(--glass-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  /* backdrop-filter managed by neon-horizon.js for reactive Glass Blur */
   box-shadow: 0 8px 32px rgba(0,0,0,.3) !important;
   transition: all .3s cubic-bezier(.25,.46,.45,.94) !important;
 }
@@ -420,7 +431,7 @@
 
 [data-theme="neon-horizon"] .gd-slide:hover {
   border-color: var(--pl) !important;
-  box-shadow: 0 0 20px var(--pglow2) !important;
+  box-shadow: 0 0 var(--nh-glow-20, 20px) var(--pglow2) !important;
 }
 
 [data-theme="neon-horizon"] .gd-slide img {
@@ -433,7 +444,7 @@
 
 [data-theme="neon-horizon"] .gd-dot-item.active {
   background: var(--pl) !important;
-  box-shadow: 0 0 8px var(--pglow) !important;
+  box-shadow: 0 0 var(--nh-glow-8, 8px) var(--pglow) !important;
 }
 
 /* Carousel scrollbar */
@@ -512,7 +523,7 @@
 }
 
 [data-theme="neon-horizon"] .emu-size-btn.active {
-  box-shadow: 0 0 10px var(--pglow2) !important;
+  box-shadow: 0 0 var(--nh-glow-10, 10px) var(--pglow2) !important;
 }
 
 
@@ -532,7 +543,7 @@
 [data-theme="neon-horizon"] .gd-genre-tag:hover,
 [data-theme="neon-horizon"] .genre-chip:hover {
   border-color: var(--pl) !important;
-  box-shadow: 0 0 8px var(--pglow2) !important;
+  box-shadow: 0 0 var(--nh-glow-8, 8px) var(--pglow2) !important;
 }
 
 
@@ -547,7 +558,7 @@
 
 [data-theme="neon-horizon"] .list-row:hover {
   border-color: var(--pl) !important;
-  box-shadow: 0 0 16px var(--pglow2) !important;
+  box-shadow: 0 0 var(--nh-glow-16, 16px) var(--pglow2) !important;
 }
 
 
@@ -559,7 +570,7 @@
   background: rgba(10,6,24,.97) !important;
   border: 1px solid rgba(0,212,255,.15) !important;
   border-radius: 20px !important;
-  box-shadow: 0 0 60px var(--pglow2), 0 32px 80px rgba(0,0,0,.9) !important;
+  box-shadow: 0 0 var(--nh-glow-60, 60px) var(--pglow2), 0 32px 80px rgba(0,0,0,.9) !important;
 }
 
 [data-theme="neon-horizon"] .cmode-exit-hdr {
@@ -605,8 +616,7 @@
 [data-theme="neon-horizon"] .gd-confirm-box,
 [data-theme="neon-horizon"] .gl-modal {
   background: var(--glass-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  /* backdrop-filter managed by neon-horizon.js for reactive Glass Blur */
   border: 1px solid rgba(0,212,255,.15) !important;
   border-radius: 20px !important;
   box-shadow: 0 0 40px var(--pglow2), 0 24px 60px rgba(0,0,0,.6) !important;

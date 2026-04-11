@@ -417,14 +417,19 @@ onUnmounted(stopHeroRotation)
 }
 
 .nh-hero-btn--primary {
-  background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff));
-  color: #fff;
-  box-shadow: 0 4px 20px var(--pglow2, rgba(0,212,255,.25));
+  background: color-mix(in srgb, var(--pl, #00d4ff) 20%, rgba(255,255,255,.06));
+  color: var(--pl, #00d4ff);
+  border: 1px solid color-mix(in srgb, var(--pl) 30%, transparent);
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .nh-hero-btn--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--pglow, rgba(0,212,255,.4));
+  background: color-mix(in srgb, var(--pl) 30%, rgba(255,255,255,.1));
+  border-color: color-mix(in srgb, var(--pl) 50%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--pl) 20%, transparent);
 }
 
 /* Dot indicators */
