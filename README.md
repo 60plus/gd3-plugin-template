@@ -487,12 +487,19 @@ To distribute your plugin:
 
 ## Credits & Acknowledgments
 
-NEON HORIZON Couch Mode is inspired by and uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
+GamesDownloader V3 and its plugin system were inspired by several outstanding open-source projects:
+
+- **[RomM](https://github.com/rommapp/romm)** - ROM management platform that inspired the emulation library architecture, metadata scraping approach, and platform organization
+- **[Gameyfin](https://github.com/grimsi/gameyfin)** - Self-hosted game library manager that inspired the original concept of a personal game vault with automatic metadata fetching
+
+NEON HORIZON Couch Mode uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
 
 - **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** - Platform artwork, SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
 - **[Elementerial](https://github.com/RobZombie9043/elementerial-es-de)** - Additional design inspiration
 
 These EmulationStation themes are licensed under **Creative Commons CC-BY-NC-SA**. The assets are included for non-commercial, personal use. All credit for original artwork goes to RobZombie9043.
+
+Special thanks to the teams behind [EmulatorJS](https://emulatorjs.org/), [ScreenScraper](https://www.screenscraper.fr/), [SteamGridDB](https://www.steamgriddb.com/), and [HowLongToBeat](https://howlongtobeat.com/) for their APIs and services.
 
 ## License
 
