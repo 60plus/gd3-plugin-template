@@ -33,7 +33,7 @@ Returned by `frontend_get_theme()`:
     "id": "my-theme",                    # unique, matches registerPluginLayout() call
     "name": "My Theme",                  # display name in Settings > Appearance
     "description": "Short description",
-    "layout": "my-theme",                # layout ID — must match plugin's registerPluginLayout()
+    "layout": "my-theme",                # layout ID - must match plugin's registerPluginLayout()
     "skins": [                           # color palettes user can choose
         {"id": "blue",  "name": "Ocean",  "preview": "#2563eb"},
         {"id": "red",   "name": "Crimson","preview": "#dc2626"},
@@ -88,7 +88,7 @@ Returned by `frontend_get_theme()`:
 
 Skins are rendered as colored circles in Settings > Appearance. The selected skin sets `data-skin` attribute on `<html>`, and your CSS uses `[data-skin="blue"]` to apply colors.
 
-### Theme settings — CSS variable flow
+### Theme settings - CSS variable flow
 
 1. Plugin defines `settings` with `cssVar` in `frontend_get_theme()`
 2. User changes setting in Settings > Appearance > Theme Settings
@@ -132,10 +132,10 @@ window.__GD__ = {
     // Vue Router (all exports from 'vue-router')
     VueRouter: { useRouter, useRoute, RouterLink, RouterView, ... },
 
-    // Pinia stores (factory functions — call to get instance)
+    // Pinia stores (factory functions - call to get instance)
     stores: {
-        auth(),     // returns { user, logout() } — token BLOCKED for security
-        socket(),   // returns { syncProgress } — raw socket BLOCKED
+        auth(),     // returns { user, logout() } - token BLOCKED for security
+        socket(),   // returns { syncProgress } - raw socket BLOCKED
         theme(),    // returns full theme store (themeId, skinId, settings, applyToDOM, ...)
     },
 
@@ -150,7 +150,7 @@ window.__GD__ = {
     // Couch Mode composables
     composables: {
         useCouchNav(handlers),    // gamepad + keyboard navigation
-        couchNavPaused,           // ref<boolean> — pause input during overlays
+        couchNavPaused,           // ref<boolean> - pause input during overlays
         useCouchTheme(),          // { theme, view, setTheme, setView }
     },
 

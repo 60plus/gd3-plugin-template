@@ -1,4 +1,4 @@
-"""NEON HORIZON — futuristic theme plugin for GamesDownloader.
+"""NEON HORIZON - futuristic theme plugin for GamesDownloader.
 
 Provides a modern theme with animated gradient backgrounds, floating particles,
 glass morphism, neon glow effects, and Orbitron typography.
