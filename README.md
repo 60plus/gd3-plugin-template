@@ -319,6 +319,7 @@ neon-horizon/
 |----------|------|-------------|
 | Metadata Scraper | `templates/metadata-scraper/` | Search + fetch game data from external source |
 | Theme | `templates/theme/` | Custom layout with CSS, JS, and settings |
+| Lifecycle | `templates/lifecycle/` | Hook into app events, register custom endpoints |
 | Widget | `templates/widget/` | Dashboard card with custom content |
 
 Each template has a `plugin.py` with TODO comments showing where to add your code.
