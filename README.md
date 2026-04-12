@@ -1,210 +1,77 @@
-# GD3 Plugin Template
+# GD3 Plugin Development Guide
 
-Templates and examples for building plugins for [GamesDownloader V3](https://gitea.domowy.tech/60plus/GamesDownloader).
+Templates, examples, and documentation for building plugins for [GamesDownloader V3](https://gitea.domowy.tech/60plus/GamesDownloader).
 
-## What can plugins do?
+> **Looking to install plugins?** Go to [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for ready-to-install ZIPs, or add the store URL in Settings > Plugin Store.
 
-| Type | Description | Example |
-|------|-------------|---------|
-| **metadata** | Scrape game info from external sources (descriptions, ratings, screenshots) | PPE.pl scraper |
-| **download** | Add new download sources | Torrent tracker integration |
-| **library** | Scan game libraries from new sources | NAS folder scanner |
-| **theme** | Complete custom themes with layouts, couch mode, and visual effects | NEON HORIZON theme |
-| **widget** | Add dashboard cards and widgets | RSS feed reader |
-| **lifecycle** | Hook into app events (game added, download complete, startup/shutdown) | Discord notifier |
+---
 
-## Quick start
+## Plugin Types
 
-1. Copy a template from `templates/` matching your plugin type
+| Type | Description | Hooks | Example |
+|------|-------------|-------|---------|
+| **theme** | Custom layouts, Vue components, CSS, JS, couch mode | `FrontendProviderSpec` | NEON HORIZON |
+| **metadata** | Scrape game info from external sources | `MetadataProviderSpec` | PPE.pl Scraper |
+| **lifecycle** | Hook into app events (startup, game added, download done) | `LifecycleSpec` | Description Translator |
+| **download** | Add new download sources | `DownloadProviderSpec` | — |
+| **library** | Scan game libraries from new sources | `LibrarySourceSpec` | — |
+| **widget** | Add dashboard cards | `WidgetSpec` | — |
+
+---
+
+## Quick Start
+
+1. Copy a starter template from `templates/` matching your plugin type
 2. Edit `plugin.json` with your plugin info
-3. Write your code in `plugin.py`
-4. ZIP the folder and install via Settings > Plugins in GamesDownloader
+3. Implement hooks in `plugin.py`
+4. ZIP the folder and install via Settings > Plugins
 
 ```
 my-plugin/
   plugin.json       # manifest (required)
-  plugin.py         # entry point with Plugin class (required)
+  plugin.py         # Python class with @hookimpl methods (required)
   logo.png          # icon shown in Settings (optional)
-  requirements.txt  # pip dependencies (optional)
-  README.md         # documentation (optional)
+  requirements.txt  # pip dependencies, installed automatically (optional)
 ```
 
 ---
 
-## Building a Theme Plugin
-
-Theme plugins can provide **complete custom layouts** — not just color skins. The plugin system compiles Vue SFC files on container startup, giving you full control over HTML structure, CSS, and interactivity.
-
-### What theme plugins can provide
-
-| Component | File | Description |
-|-----------|------|-------------|
-| **Main Layout** | `*Layout.vue` | Navbar, sidebar, page shell — wraps all routes |
-| **Home Page** | `*Home.vue` | Custom dashboard (hero banners, recently added rows) |
-| **Library Views** | `*Library.vue` | Custom game grid/list for GOG, Games, Emulation |
-| **Search** | `*Search.vue` | Global search results page |
-| **Couch Mode** | `*Couch.vue` | Full-screen controller UI for TV (platform carousel, game browser, video playback) |
-| **CSS Overrides** | `neon-horizon.css` | Style overrides for existing GD components |
-| **JS Effects** | `neon-horizon.js` | Dynamic effects (gradient text, glass blur, glow) |
-| **Static Assets** | `assets/` | Images, icons, logos, metadata JSON — served via `/api/plugins/{id}/assets/` |
-
-### How theme compilation works
-
-1. Plugin provides `.vue` files + `plugin.json` with `"type": "theme"`
-2. On container startup, GD's entrypoint runs `compile-theme-plugins.mjs`
-3. Vite compiles all `.vue` files into a single IIFE bundle (`layout.js` + `layout.css`)
-4. Frontend loads the bundle and registers the layout/couch components
-5. When user selects your theme in Settings > Appearance, your components render
-
-### Vue files — important rules
-
-Plugin Vue files are compiled **outside the main app bundle**. They cannot import from `@/` paths. Instead, use:
-
-```typescript
-// Access Vue runtime
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-
-// Access GD stores, API, and utilities via window.__GD__
-const _gd = (window as any).__GD__
-const client = _gd.api                          // Axios client with auth
-const auth = _gd.stores.auth()                   // User info (token hidden for security)
-const themeStore = _gd.stores.theme()            // Theme settings
-const socketStore = _gd.stores.socket()          // WebSocket (sync progress hidden)
-
-// Composables for Couch Mode
-const { useCouchNav, couchNavPaused } = _gd.composables
-const getEjsCore = _gd.getEjsCore               // Platform → EmulatorJS core mapping
-
-// Register your components
-_gd.registerPluginLayout('my-theme', LayoutComponent)
-_gd.registerPluginCouchMode('my-theme', CouchComponent)
-_gd.registerTheme({ id: 'my-theme', name: 'My Theme', ... })
-```
-
-**Global components** available in plugin templates (registered in GD's `main.ts`):
-- `<DownloadManager />` — Download queue tray (admin only)
-- `<RandomGamePicker />` — Random game dice button
-- `<AmbientBackground />` — Animated orb background (respects theme settings)
-
-### Plugin assets
-
-Theme plugins can bundle static assets in an `assets/` directory. These are served via:
-```
-/api/plugins/{plugin-id}/assets/{path}
-```
-
-Example: `/api/plugins/neon-horizon/assets/pop/snes.webp`
-
-Use the helper in your Vue component:
-```typescript
-const PLUGIN_ID = 'my-theme'
-function pluginAsset(path: string): string {
-  return `/api/plugins/${PLUGIN_ID}/assets/${path}`
-}
-```
-
-### Theme definition (plugin.py)
-
-```python
-from plugins.hookspecs import hookimpl
-
-class Plugin:
-    @hookimpl
-    def frontend_get_theme(self):
-        return {
-            "id": "my-theme",
-            "name": "My Theme",
-            "description": "A custom theme",
-            "layout": "my-theme",         # must match registerPluginLayout() id
-            "skins": [
-                {"id": "blue", "name": "Ocean Blue", "preview": "#2563eb"},
-                {"id": "red",  "name": "Crimson",    "preview": "#dc2626"},
-            ],
-            "defaultSkin": "blue",
-            "cssFile": "my-theme",
-            "font": "https://fonts.googleapis.com/css2?family=MyFont&display=swap",
-            "previewHtml": "<div>...</div>",  # optional: custom preview in theme switcher
-            "settings": [
-                {
-                    "key": "glassBlur",
-                    "label": "Glass Blur",
-                    "type": "range",
-                    "default": 20,
-                    "min": 0, "max": 60, "step": 1,
-                    "unit": "px",
-                    "cssVar": "--my-glass-blur",
-                },
-            ],
-        }
-
-    @hookimpl
-    def frontend_get_css(self):
-        return Path(__file__).parent.joinpath("my-theme.css").read_text()
-
-    @hookimpl
-    def frontend_get_js(self):
-        return Path(__file__).parent.joinpath("my-theme.js").read_text()
-```
-
-### Theme settings
-
-Settings defined in `frontend_get_theme()` → `settings` array are:
-- Rendered automatically in Settings > Appearance > Theme Settings
-- Applied as CSS custom properties on `:root` via the theme store
-- Readable in plugin JS via `getComputedStyle(root).getPropertyValue('--my-var')`
-
-**Note:** Pinia store reactivity may not work reliably in compiled plugin components. Poll CSS variables instead:
-```typescript
-setInterval(() => {
-  const cs = getComputedStyle(document.documentElement)
-  myValue.value = cs.getPropertyValue('--my-css-var').trim()
-}, 1500)
-```
-
----
-
-## Plugin manifest (plugin.json)
+## plugin.json Manifest
 
 ```json
 {
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "version": "1.0.0",
-  "author": "Your Name",
-  "description": "What this plugin does",
-  "type": "theme",
-  "entry": "plugin.py",
-  "has_logo": true,
-  "min_gd_version": "3.0.0",
-  "config_schema": {}
+  \"id\": \"my-plugin\",
+  \"name\": \"My Plugin\",
+  \"version\": \"1.0.0\",
+  \"author\": \"Your Name\",
+  \"description\": \"What this plugin does\",
+  \"type\": \"metadata\",
+  \"entry\": \"plugin.py\",
+  \"has_logo\": true,
+  \"requires\": [\"httpx\", \"beautifulsoup4\"],
+  \"min_gd_version\": \"3.0.0\",
+  \"config_schema\": {
+    \"api_key\": {
+      \"type\": \"string\",
+      \"default\": \"\",
+      \"label\": \"API Key\"
+    },
+    \"enabled\": {
+      \"type\": \"boolean\",
+      \"default\": true,
+      \"label\": \"Enable\"
+    }
+  }
 }
 ```
 
-### Required fields
+Config schema fields are rendered as a settings form in Settings > Plugins. Supported types: `string`, `number`, `boolean`, `select`.
 
-| Field | Description |
-|-------|-------------|
-| `id` | Unique identifier, lowercase with dashes (e.g. `my-theme`) |
-| `name` | Display name shown in Settings |
-| `version` | Semantic version (e.g. `1.0.0`) |
-| `author` | Your name or handle |
-| `type` | One of: `metadata`, `download`, `library`, `theme`, `widget`, `lifecycle` |
-| `entry` | Python file containing the `Plugin` class (usually `plugin.py`) |
+---
 
-### Optional fields
+## Plugin Class & Hooks
 
-| Field | Description |
-|-------|-------------|
-| `description` | Short description shown in Settings |
-| `has_logo` | Set to `true` if plugin has `logo.png` or `logo.svg` |
-| `requires` | List of pip package names needed by the plugin |
-| `min_gd_version` | Minimum GamesDownloader version required |
-| `config_schema` | Configuration fields (rendered as form in Settings > Plugins) |
-
-## Plugin class
-
-Your `plugin.py` must define a `Plugin` class that implements hooks:
+Your `plugin.py` must define a `Plugin` class using `@hookimpl` decorators:
 
 ```python
 from plugins.hookspecs import hookimpl
@@ -212,129 +79,266 @@ from plugins.hookspecs import hookimpl
 class Plugin:
     @hookimpl
     def metadata_provider_name(self) -> str:
-        return "My Source"
+        return \"My Source\"
+
+    @hookimpl
+    def metadata_provider_id(self) -> str:
+        return \"my-source\"
 ```
 
-## Available hooks
-
-See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference.
-
-## Installing plugins
-
-1. Go to **Settings > Plugins** in GamesDownloader
-2. Drag and drop your `.zip` file into the install area
-3. The plugin is extracted, dependencies installed, and loaded automatically
-4. Enable/disable and configure from the same page
-5. **For theme plugins with `.vue` files:** restart the container after install (Vite compiles them on startup)
+See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference with all specs and return types.
 
 ---
 
-## Examples
+## Example: Metadata Plugin (PPE.pl Scraper)
 
-### NEON HORIZON Theme (`examples/neon-horizon/`)
+**Source:** `examples/ppe-metadata/`
 
-A complete theme plugin inspired by [Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de) for EmulationStation, adapted for web with neon cyberpunk aesthetics.
+A metadata scraper that finds Polish game descriptions, ratings, genres, and screenshots from PPE.pl.
 
-**Main Layout:**
-- Netflix-style home page with hero banner and recently added rows
-- Library tabs in navbar (GOG, Games, Emulation)
-- Steam Big Picture style library views (16:9 landscape cards with hero background + cover thumbnail)
-- Cover thumbnails scale proportionally with card size (XL=100%, L=80.8%, M=61.5%, S=46.2%)
-- Global search across all libraries
-- Alphabet quick-nav sidebar
+**How it works:**
+1. `metadata_search_game(query)` searches PPE.pl via Bing/DuckDuckGo, returns matching pages
+2. `metadata_get_game(url)` scrapes the page with BeautifulSoup, extracts structured data
+3. `metadata_get_cover_url(url)` extracts the game cover image URL
+4. Fuzzy title matching with configurable threshold (default 65%)
 
-**Couch Mode (Colorful Pop style):**
-- Platform carousel with pop character artwork and console overlay with TV cutout
-- Real game video playing inside TV cutouts — positions computed from EmulationStation XML per platform
-- Pop → overlay+video → pop automatic cycling with configurable timing
-- Game list view: text list + cover + console overlay with live game video + full game info panel (rating, genres, developer/publisher logos from ScreenScraper, description, HLTB times)
-- Game carousel view: full-screen fanart with game info overlay
-- **Favorites system**: Y button (gamepad) or F key to toggle — gold star indicator, per-platform favorite count, dedicated favorites list accessible via ← from platform selector
-- **Recently Played**: last 50 games launched, accessible via → from platform selector
-- Both Favorites and Recently Played support list and carousel views with mixed cover aspect ratios
-- Platform descriptions in 15 languages (auto-detected from browser)
-- Per-platform system colors from EmulationStation metadata
-- Wheel logo display during video playback (centered on TV)
-- Developer/publisher logos from ScreenScraper API with text fallback
-- Glass morphism panels with skin-colored tinting
-- NH ambient background (orbs, particles, grid, scanlines) — same as main theme
-- Visual settings (Start > Visuals): Ken Burns animation, video cycle, video volume, icon animations (shake/spin/pop/bounce)
-- Gamepad button icons in help bar (D-pad, A, B, X, Y, Start)
+**Hooks implemented:** `MetadataProviderSpec`
+- `metadata_provider_name()` / `metadata_provider_id()` — identity
+- `metadata_search_game(query)` — search PPE.pl, return `[{provider_id, provider_game_id, name, snippet}]`
+- `metadata_get_game(provider_game_id)` — scrape full metadata: title, description, rating (0-100), genre, release_date, developer, screenshots, source_url
+- `metadata_get_cover_url(provider_game_id)` — cover image URL
 
-**Theme Features:**
-- 8 color skins (Cyan Flux, Violet Surge, Magenta Pulse, Gold Circuit, Cyber, Plasma, Sunset, Aurora)
-- Typography: Orbitron headers, Rajdhani body
-- Ambient orbs, floating particles, grid overlay, scanline CRT effect
-- Glass morphism with configurable blur and opacity
-- Settings integration: all visual effects controllable from Settings > Appearance
+**Config:** search engine (bing/duckduckgo), minimum match score
 
-**Plugin type:** `theme` (implements `FrontendProviderSpec`)
+**Dependencies:** `beautifulsoup4`, `httpx`
 
 **Files:**
 ```
-examples/neon-horizon/
+ppe-metadata/
+  plugin.json        # manifest, type: metadata
+  plugin.py          # 450 lines — search + scrape + fuzzy match
+  logo.png           # plugin icon
+  requirements.txt   # beautifulsoup4, httpx
+```
+
+---
+
+## Example: Lifecycle Plugin (Description Translator)
+
+**Source:** `examples/gd3-translator/`
+
+Translates game descriptions between 26 languages using Google Translate (via translate-shell).
+
+**How it works:**
+1. Backend exposes `/api/plugins/translate` endpoint
+2. Frontend adds a translate button on game detail pages
+3. Text is split into ~450-char chunks at paragraph boundaries
+4. Each chunk translated via `translate-shell` package
+5. Results joined back together
+
+**Hooks implemented:** `LifecycleSpec`
+- `lifecycle_on_startup()` — registers the translate endpoint
+
+**Key patterns:**
+- Async-safe threading: uses `asyncio.to_thread()` to avoid blocking the event loop
+- Text chunking: splits at `\\n\\n` boundaries, respects max chunk size
+- Language detection: `from_lang: \"auto\"` uses Google's auto-detect
+
+**Config:** source language (auto/en/pl/de/...), target language
+
+**Dependencies:** `translate-shell>=0.0.59`
+
+**Files:**
+```
+gd3-translator/
+  plugin.json        # manifest, type: lifecycle
+  plugin.py          # 140 lines — translate endpoint + chunking
+  logo.png           # plugin icon
+  requirements.txt   # translate-shell
+```
+
+---
+
+## Example: Theme Plugin (NEON HORIZON)
+
+**Source:** `examples/neon-horizon/`
+
+A complete cyberpunk theme with custom Vue layouts, Colorful Pop couch mode, 8 color skins, and gamepad support. This is the most complex plugin type — study it to understand the full capabilities.
+
+### Theme Plugin Architecture
+
+Theme plugins provide three hook implementations:
+
+```python
+from plugins.hookspecs import hookimpl
+from pathlib import Path
+
+class Plugin:
+    @hookimpl
+    def frontend_get_theme(self):
+        return {
+            \"id\": \"neon-horizon\",
+            \"name\": \"NEON HORIZON\",
+            \"layout\": \"neon-horizon\",          # must match registerPluginLayout() id
+            \"skins\": [
+                {\"id\": \"nh-cyber\", \"name\": \"Cyan Flux\", \"preview\": \"#00d4ff\"},
+                {\"id\": \"nh-violet\", \"name\": \"Violet Surge\", \"preview\": \"#8b5cf6\"},
+            ],
+            \"defaultSkin\": \"nh-cyber\",
+            \"cssFile\": \"neon-horizon\",
+            \"font\": \"https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap\",
+            \"settings\": [
+                {
+                    \"key\": \"particleCount\",
+                    \"label\": \"nh.setting_particles\",    # i18n key (translated in Settings UI)
+                    \"hint\": \"nh.setting_particles_hint\",
+                    \"type\": \"select\",
+                    \"default\": \"6\",
+                    \"options\": [\"0\", \"3\", \"6\", \"12\"],
+                    \"optionLabels\": [\"nh.opt_none\", \"nh.opt_few\", \"nh.opt_normal\", \"nh.opt_many\"],
+                    \"cssVar\": \"--nh-particle-count\",
+                },
+            ],
+        }
+
+    @hookimpl
+    def frontend_get_css(self):
+        return Path(__file__).parent.joinpath(\"neon-horizon.css\").read_text(encoding=\"utf-8\")
+
+    @hookimpl
+    def frontend_get_js(self):
+        return Path(__file__).parent.joinpath(\"neon-horizon.js\").read_text(encoding=\"utf-8\")
+```
+
+### Vue SFC Compilation
+
+Theme plugins with `.vue` files are compiled on container startup by Vite:
+
+1. Plugin has `.vue` files + `plugin.json` with `\"type\": \"theme\"`
+2. Container entrypoint runs `compile-theme-plugins.mjs`
+3. Vite compiles to IIFE bundle: `layout.js` + `layout.css`
+4. Frontend loads and registers components via `window.__GD__`
+
+**After installing/updating a theme plugin, restart the container** (Plugin Store has a \"Restart Now\" button).
+
+### Vue Files — Important Rules
+
+Plugin `.vue` files are compiled **outside the main app bundle**. You cannot use `@/` imports. Instead use `window.__GD__`:
+
+```typescript
+// Vue runtime — import normally
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+// GD runtime — access via window.__GD__
+const _gd = (window as any).__GD__
+const client = _gd.api                        // Axios with Bearer token
+const auth = _gd.stores.auth()                 // { user } — token hidden
+const themeStore = _gd.stores.theme()          // full theme store
+const t = _gd.i18n?.t || ((k: string) => k)   // i18n translation
+
+// Couch Mode composables
+const { useCouchNav, couchNavPaused } = _gd.composables
+const getEjsCore = _gd.getEjsCore             // platform → EmulatorJS core
+
+// Register your layout + couch components
+_gd.registerPluginLayout('my-theme', LayoutComponent)
+_gd.registerPluginCouchMode('my-theme', CouchComponent)
+```
+
+**Global components** available in templates:
+- `<DownloadManager />` — Download queue tray (admin only)
+- `<RandomGamePicker />` — Random game dice button
+- `<AmbientBackground />` — Animated orb background
+
+### Plugin Assets
+
+Static files in `assets/` are served at:
+```
+/api/plugins/{plugin-id}/assets/{path}
+```
+
+Helper pattern:
+```typescript
+const PLUGIN_ID = 'neon-horizon'
+function pluginAsset(path: string): string {
+  return `/api/plugins/${PLUGIN_ID}/assets/${path}`
+}
+```
+
+### Theme Settings
+
+Settings in `frontend_get_theme()` → `settings[]` are:
+- Rendered in Settings > Appearance > Theme Settings
+- Applied as CSS custom properties on `:root`
+- Setting types: `range` (slider), `select` (chips), `toggle` (on/off)
+- Labels support i18n keys: use `\"label\": \"nh.my_setting\"` and add the key to the app's i18n files
+
+### i18n in Plugins
+
+Use the main app's i18n system:
+```typescript
+const t = _gd.i18n?.t || ((k: string) => k)
+// t('nh.my_key') → translated string, falls back to key
+```
+
+Add your keys to the main app's `frontend/src/i18n/en.json` and `pl.json` with a plugin prefix (e.g. `nh.*`).
+
+**NEON HORIZON Files:**
+```
+neon-horizon/
   NeonHorizonLayout.vue    # Main shell (navbar, particles, route detection)
-  NeonHorizonHome.vue      # Home page (hero banner, recently added)
-  NeonHorizonLibrary.vue   # Library view (Big Picture cards, alphabet)
+  NeonHorizonHome.vue      # Home page (hero banner, recently added rows)
+  NeonHorizonLibrary.vue   # Library view (Big Picture cards, alphabet sidebar)
   NeonHorizonSearch.vue    # Global search results
-  NeonHorizonCouch.vue     # Couch Mode (Colorful Pop style)
+  NeonHorizonCouch.vue     # Couch Mode (Colorful Pop style, 1000+ lines)
   neon-horizon.css         # CSS overrides for existing GD components
-  neon-horizon.js          # Dynamic effects (gradient text, glass blur)
-  plugin.py                # Theme definition, skins, settings
+  neon-horizon.js          # Dynamic effects (gradient text, glass blur observer)
+  plugin.py                # Theme definition — skins, settings, CSS/JS hooks
   plugin.json              # Manifest
-  logo.svg                 # Plugin icon (retrowave sun)
-  assets/                  # Static assets (served via /api/plugins/neon-horizon/assets/)
+  logo.svg                 # Plugin icon
+  assets/
     pop/                   # Pop character artwork per platform (95 platforms)
     overlay/               # Console overlay with TV cutout (RGBA transparency)
     artwork/               # Modern console artwork (Ken Burns background)
     icons/                 # Colored platform icons
     logos/                 # SVG platform name logos
-    images/                # UI icons (games count, favorite badge)
-    platforms.json         # Platform metadata (names, colors, descriptions, 15 languages)
-    videopos.json          # Video positions inside TV cutouts (computed from ES-DE XML)
+    platforms.json         # Platform metadata (names, colors, descriptions in 15 languages)
+    videopos.json          # Video positions inside TV cutouts
 ```
-
-### PPE.pl Metadata Scraper (`examples/ppe-metadata/`)
-
-A metadata plugin that scrapes game data from PPE.pl (Polish gaming website).
-
-**Plugin type:** `metadata`
-
-### Description Translator (`examples/gd3-translator/`)
-
-Translates game descriptions between 26 languages using Google Translate.
-
-**Plugin type:** `lifecycle`
 
 ---
 
-## Directory structure
+## Starter Templates
 
-```
-gd3-plugin-template/
-  templates/
-    metadata-scraper/   # starter template for metadata plugins
-    theme/              # starter template for theme plugins (plugin.py, CSS, JS, JSON)
-    widget/             # starter template for widget plugins
-  examples/
-    neon-horizon/       # complete theme (Vue layouts, couch mode, CSS, JS, 95 platform assets)
-    ppe-metadata/       # complete metadata scraper (PPE.pl)
-    gd3-translator/     # complete translator (26 languages)
-  docs/
-    HOOKS.md            # detailed hook reference (all specs, window.__GD__ API, Vue compilation)
-  build.sh              # ZIP packaging helper
-```
+| Template | Path | Description |
+|----------|------|-------------|
+| Metadata Scraper | `templates/metadata-scraper/` | Search + fetch game data from external source |
+| Theme | `templates/theme/` | Custom layout with CSS, JS, and settings |
+| Widget | `templates/widget/` | Dashboard card with custom content |
+
+Each template has a `plugin.py` with TODO comments showing where to add your code.
+
+---
+
+## Distribution
+
+To distribute your plugin:
+
+1. ZIP your plugin folder: `cd my-plugin && zip -r ../my-plugin-v1.0.0.zip .`
+2. Users install via Settings > Plugins (drag & drop ZIP)
+3. Or publish to a Plugin Store — see [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for the store.json format
 
 ---
 
 ## Credits & Acknowledgments
 
-NEON HORIZON theme's Couch Mode is inspired by and uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
+NEON HORIZON Couch Mode is inspired by and uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
 
-- **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** — Platform artwork (pop, overlay, modern), SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
+- **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** — Platform artwork, SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
 - **[Elementerial](https://github.com/RobZombie9043/elementerial-es-de)** — Additional design inspiration
 
-These EmulationStation themes are licensed under **Creative Commons CC-BY-NC-SA**. The assets are included in the NEON HORIZON plugin for non-commercial, personal use in accordance with this license. All credit for the original artwork and metadata goes to RobZombie9043.
+These EmulationStation themes are licensed under **Creative Commons CC-BY-NC-SA**. The assets are included for non-commercial, personal use. All credit for original artwork goes to RobZombie9043.
 
 ## License
 
