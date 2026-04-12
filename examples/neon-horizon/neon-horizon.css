@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   NEON HORIZON — Complete visual overhaul
-   Not just colors — different shapes, sizes, spacing, visual language
+   NEON HORIZON - Complete visual overhaul
+   Not just colors - different shapes, sizes, spacing, visual language
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="neon-horizon"] {
@@ -10,7 +10,7 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 20px;
-  /* glass-blur-px and glass-sat managed by theme store — do NOT set here */
+  /* glass-blur-px and glass-sat managed by theme store - do NOT set here */
   --navbar-blur-px: 16px;
   /* Pre-computed glow sizes for box-shadow (calc inside box-shadow unreliable) */
   --nh-glow-8:  8px;
@@ -167,7 +167,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLOBAL — font, body, transitions
+   GLOBAL - font, body, transitions
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"],
@@ -178,11 +178,11 @@
   --transition-slow: .4s cubic-bezier(.25,.46,.45,.94);
 }
 
-/* AmbientBackground component is used directly — do NOT hide it */
+/* AmbientBackground component is used directly - do NOT hide it */
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY — Orbitron EVERYWHERE headings, bigger sizes, wider spacing
+   TYPOGRAPHY - Orbitron EVERYWHERE headings, bigger sizes, wider spacing
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] h1,
@@ -217,7 +217,7 @@
   font-family: 'Orbitron', sans-serif !important;
 }
 
-/* Section labels — distinct uppercase accent style */
+/* Section labels - distinct uppercase accent style */
 [data-theme="neon-horizon"] .gd-section-label,
 [data-theme="neon-horizon"] .home-section-title {
   font-size: 10px !important;
@@ -228,7 +228,7 @@
   margin-bottom: 16px !important;
 }
 
-/* Tabs — Orbitron uppercase */
+/* Tabs - Orbitron uppercase */
 [data-theme="neon-horizon"] .v-tab {
   font-size: 11px !important;
   letter-spacing: 0.08em !important;
@@ -238,7 +238,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLASS PANELS — deeper, with inset highlight and stronger border
+   GLASS PANELS - deeper, with inset highlight and stronger border
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .glass,
@@ -259,7 +259,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BUTTONS — gradient primary, ghost with neon hover
+   BUTTONS - gradient primary, ghost with neon hover
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .v-btn--variant-flat.bg-primary,
@@ -314,7 +314,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HOME PAGE — library cards completely restyled
+   HOME PAGE - library cards completely restyled
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .home-lib-card {
@@ -361,7 +361,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO — game detail pages, neon title glow, cover frame glow
+   HERO - game detail pages, neon title glow, cover frame glow
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .gd-hero {
@@ -419,7 +419,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MEDIA CAROUSEL — hover glow, zoom on hover
+   MEDIA CAROUSEL - hover glow, zoom on hover
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .gd-slide {
@@ -455,7 +455,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   COVER GRIDS — GOG, Games library cards hover
+   COVER GRIDS - GOG, Games library cards hover
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .cover-wrap {
@@ -482,7 +482,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   EMULATION LIBRARY — platform bar, ROM cards
+   EMULATION LIBRARY - platform bar, ROM cards
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .emu-platform-name-text {
@@ -528,7 +528,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GENRE TAGS — neon styled
+   GENRE TAGS - neon styled
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .gd-genre-tag,
@@ -548,7 +548,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIST VIEW — row hover glow
+   LIST VIEW - row hover glow
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .list-row {
@@ -563,7 +563,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   COUCH MODE — exit panel, cards glow
+   COUCH MODE - exit panel, cards glow
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .cmode-exit-panel {
@@ -607,7 +607,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DIALOGS — glass + neon border
+   DIALOGS - glass + neon border
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .v-overlay__content > .v-card,
@@ -624,7 +624,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   INPUTS — focus glow
+   INPUTS - focus glow
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .v-field--focused {
@@ -647,6 +647,9 @@
 [data-theme="neon-horizon"] .emu-back-btn,
 [data-theme="neon-horizon"] .lib-back-btn {
   transition: all .2s !important;
+}
+[data-theme="neon-horizon"] .gd-back-pill {
+  top: 70px;
 }
 
 [data-theme="neon-horizon"] .gd-back-pill:hover,
@@ -706,7 +709,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO BANNER — gradient text on title (responds to skin vars)
+   HERO BANNER - gradient text on title (responds to skin vars)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="neon-horizon"] .nh-hero-title {

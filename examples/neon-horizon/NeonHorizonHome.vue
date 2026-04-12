@@ -31,7 +31,7 @@
         </div>
         <div class="nh-hero-actions">
           <button class="nh-hero-btn nh-hero-btn--primary" @click="navigateToHero(currentHero)">
-            View Details
+            {{ t('nh.view_details') }}
           </button>
         </div>
       </div>
@@ -47,11 +47,11 @@
       </div>
     </section>
 
-    <!-- ── Recently Added — GOG ─────────────────────────────────────────── -->
+    <!-- ── Recently Added - GOG ─────────────────────────────────────────── -->
     <section v-if="isAdmin && gogLib.recent.length" class="nh-recent">
       <div class="nh-section-head">
         <button class="nh-section-title nh-section-link" @click="router.push('/library')">
-          Recently Added — GOG Library
+          {{ t('nh.recent_gog') }}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="nh-row-nav">
@@ -71,11 +71,11 @@
       </div>
     </section>
 
-    <!-- ── Recently Added — Games Library ────────────────────────────────── -->
+    <!-- ── Recently Added - Games Library ────────────────────────────────── -->
     <section v-if="customLib.recent.length" class="nh-recent">
       <div class="nh-section-head">
         <button class="nh-section-title nh-section-link" @click="router.push('/games')">
-          Recently Added — Games Library
+          {{ t('nh.recent_games') }}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="nh-row-nav">
@@ -95,11 +95,11 @@
       </div>
     </section>
 
-    <!-- ── Recently Added — Emulation ────────────────────────────────────── -->
+    <!-- ── Recently Added - Emulation ────────────────────────────────────── -->
     <section v-if="emuRecent.length" class="nh-recent">
       <div class="nh-section-head">
         <button class="nh-section-title nh-section-link" @click="router.push('/emulation')">
-          Recently Added — Emulation Library
+          {{ t('nh.recent_emulation') }}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="nh-row-nav">
@@ -129,6 +129,7 @@ import { useRouter } from 'vue-router'
 // Use GD plugin API for stores and API client
 const _gd = (window as any).__GD__
 const client = _gd.api
+const t = _gd.i18n?.t || ((k: string) => k)
 
 /* ── Interfaces ─────────────────────────────────────────────────────────── */
 interface LibGame { id: number; title: string; slug: string; source: string; cover_path: string | null; background_path: string | null; genres?: string[] }
@@ -177,7 +178,7 @@ const currentHero = computed(() => heroPool.value[heroIndex.value] ?? null)
 
 const heroLibraryLabel = computed(() => {
   if (!currentHero.value) return ''
-  const m: Record<string, string> = { gog: 'GOG Library', games: 'Games Library', emulation: 'Emulation' }
+  const m: Record<string, string> = { gog: t('nh.library_gog'), games: t('nh.library_games'), emulation: t('nh.library_emulation') }
   return m[currentHero.value.library] || ''
 })
 
@@ -278,7 +279,7 @@ onUnmounted(stopHeroRotation)
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════════════════════════
-   NEON HORIZON HOME — Netflix-style dashboard
+   NEON HORIZON HOME - Netflix-style dashboard
    ═══════════════════════════════════════════════════════════════════════════ */
 .nh-home {
   display: flex; flex-direction: column;
@@ -320,7 +321,7 @@ onUnmounted(stopHeroRotation)
 }
 .nh-hero-bg--no-anim .nh-hero-bg-img { animation: none !important; }
 
-/* Bottom gradient — transparent to bg */
+/* Bottom gradient - transparent to bg */
 .nh-hero-gradient {
   position: absolute;
   inset: 0;
@@ -343,7 +344,7 @@ onUnmounted(stopHeroRotation)
   z-index: 1;
 }
 
-/* Content — positioned bottom-left */
+/* Content - positioned bottom-left */
 .nh-hero-content {
   position: absolute;
   bottom: 40px;

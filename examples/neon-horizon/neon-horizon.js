@@ -1,5 +1,5 @@
 /**
- * NEON HORIZON — Theme JavaScript
+ * NEON HORIZON - Theme JavaScript
  * Handles all dynamic theme effects via DOM manipulation:
  * - Gradient text on headings
  * - Glass blur on all nh-navbar, nh-user-menu, .glass elements
@@ -50,7 +50,7 @@
     });
   }
 
-  // ── Glass blur + opacity — apply to all glass elements ──────────────
+  // ── Glass blur + opacity - apply to all glass elements ──────────────
   var GLASS_SELECTORS = '.nh-navbar, .nh-user-menu, .glass, .glass-panel, .glass-card, .v-overlay__content > .v-card, .v-dialog .v-card, .sync-dialog, .gd-confirm-box, .gl-modal, .ts-option, .ts-theme-card, .settings-content, .pv-section';
   var _lastBlur = -1;
   var _lastOpacity = -1;
@@ -66,7 +66,7 @@
     document.querySelectorAll(GLASS_SELECTORS).forEach(function (el) {
       el.style.backdropFilter = blurVal;
       el.style.webkitBackdropFilter = blurVal;
-      // Update background opacity — parse current bg color and replace alpha
+      // Update background opacity - parse current bg color and replace alpha
       var cs = getComputedStyle(el);
       var bg = cs.backgroundColor;
       if (bg && bg.startsWith('rgb')) {
@@ -88,7 +88,7 @@
   // Observe root attribute/style changes (theme switch, settings changes)
   var observer = new MutationObserver(function () { update(); });
 
-  // Observe body for new elements — debounced to avoid storms during route changes
+  // Observe body for new elements - debounced to avoid storms during route changes
   var _bodyDebounce;
   var bodyObserver = new MutationObserver(function () {
     if (!isActive()) return;

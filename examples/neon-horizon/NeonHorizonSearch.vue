@@ -1,15 +1,15 @@
 <template>
   <div class="nh-search-results">
     <div class="nh-sr-header">
-      <span class="nh-sr-label">Search results for</span>
+      <span class="nh-sr-label">{{ t('nh.search_results_for') }}</span>
       <span class="nh-sr-query">"{{ query }}"</span>
-      <span class="nh-sr-total">{{ totalResults }} found</span>
+      <span class="nh-sr-total">{{ t('nh.found', { count: totalResults }) }}</span>
     </div>
 
     <!-- GOG results -->
     <section v-if="gogResults.length" class="nh-sr-section">
       <div class="nh-sr-section-head">
-        <span class="nh-sr-section-title">GOG Library</span>
+        <span class="nh-sr-section-title">{{ t('nh.library_gog') }}</span>
         <span class="nh-sr-section-count">{{ gogResults.length }}</span>
       </div>
       <div class="nh-sr-grid">
@@ -31,7 +31,7 @@
     <!-- Games Library results -->
     <section v-if="gamesResults.length" class="nh-sr-section">
       <div class="nh-sr-section-head">
-        <span class="nh-sr-section-title">Games Library</span>
+        <span class="nh-sr-section-title">{{ t('nh.library_games') }}</span>
         <span class="nh-sr-section-count">{{ gamesResults.length }}</span>
       </div>
       <div class="nh-sr-grid">
@@ -53,7 +53,7 @@
     <!-- Emulation results -->
     <section v-if="emuResults.length" class="nh-sr-section">
       <div class="nh-sr-section-head">
-        <span class="nh-sr-section-title">Emulation</span>
+        <span class="nh-sr-section-title">{{ t('nh.library_emulation') }}</span>
         <span class="nh-sr-section-count">{{ emuResults.length }}</span>
       </div>
       <div class="nh-sr-grid">
@@ -72,7 +72,7 @@
     </section>
 
     <div v-if="!loading && totalResults === 0" class="nh-sr-empty">
-      <div class="nh-sr-empty-text">No results found</div>
+      <div class="nh-sr-empty-text">{{ t('nh.no_results') }}</div>
     </div>
   </div>
 </template>
@@ -85,6 +85,7 @@ const props = defineProps<{ query: string }>()
 
 const _gd = (window as any).__GD__
 const client = _gd.api
+const t = _gd.i18n?.t || ((k: string) => k)
 const auth = _gd.stores.auth()
 const router = useRouter()
 

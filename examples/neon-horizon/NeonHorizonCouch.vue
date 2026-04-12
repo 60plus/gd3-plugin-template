@@ -9,7 +9,7 @@
     <div v-if="nhGrid" class="cp-nh-grid" />
     <div v-if="nhScanlines" class="cp-nh-scanlines" />
 
-    <!-- ═══ SYSTEM VIEW — Colorful Pop 1:1 ═══════════════════════════ -->
+    <!-- ═══ SYSTEM VIEW - Colorful Pop 1:1 ═══════════════════════════ -->
     <template v-if="state === 'systems'">
       <div class="cp-bg" />
 
@@ -47,7 +47,7 @@
             @error="onVideoEnded"
           />
           <div v-if="nhScanlines && videoUrl && showPhase === 'overlay'" class="cp-sys-video-scanlines" :style="videoStyle" />
-          <!-- Overlay PNG with transparency ON TOP — acts as mask -->
+          <!-- Overlay PNG with transparency ON TOP - acts as mask -->
           <img
             :src="pluginAsset('overlay/' + currentPlatform.fs_slug + '.webp')"
             class="cp-sys-overlay-img"
@@ -69,7 +69,7 @@
         <span v-if="nameLogoFailed" class="cp-sys-name-text">{{ platMeta?.name || currentPlatform?.name || '' }}</span>
       </div>
 
-      <!-- Description (from metadata JSON — with translations) -->
+      <!-- Description (from metadata JSON - with translations) -->
       <div class="cp-sys-desc">{{ platDescription }}</div>
 
       <!-- Bottom 3 color blocks: icon (dark) | game count (normal) | colored icon (light) -->
@@ -93,15 +93,15 @@
 
 
       <div class="cp-help">
-        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> Navigate</span>
-        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> ★ Favorites / ⏱ Recent</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> Select</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> Back</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> Menu</span>
+        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> {{ t('nh.navigate') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> {{ t('nh.favorites_recent') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('couch.nav_select') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> {{ t('nh.menu') }}</span>
       </div>
     </template>
 
-    <!-- ═══ GAME LIST — list-video (Pop style: text list + big image) ══ -->
+    <!-- ═══ GAME LIST - list-video (Pop style: text list + big image) ══ -->
     <template v-if="state === 'games-list' || ((state === 'favorites' || state === 'recent') && gameView === 'list')">
       <!-- Colored panel behind list -->
       <div class="cp-gl-panel">
@@ -111,10 +111,10 @@
       <!-- System logo (top, above list) -->
       <div class="cp-gl-syslogo-wrap">
         <template v-if="state === 'favorites'">
-          <span class="cp-sys-special-title">★ Favorites</span>
+          <span class="cp-sys-special-title">{{ t('nh.favorites') }}</span>
         </template>
         <template v-else-if="state === 'recent'">
-          <span class="cp-sys-special-title">⏱ Recently Played</span>
+          <span class="cp-sys-special-title">{{ t('nh.recently_played') }}</span>
         </template>
         <template v-else>
           <img :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-gl-syslogo-icon" @error="(e:any) => e.target.style.display='none'" />
@@ -122,7 +122,7 @@
         </template>
       </div>
 
-      <!-- Text list (just names, no covers — like Pop) -->
+      <!-- Text list (just names, no covers - like Pop) -->
       <div class="cp-gl-list" ref="gameListRef">
         <div
           v-for="(rom, i) in roms" :key="rom.id"
@@ -141,7 +141,7 @@
         </div>
       </div>
 
-      <!-- Overlay + video (right-top — console with game video in TV) -->
+      <!-- Overlay + video (right-top - console with game video in TV) -->
       <div class="cp-gl-overlay-wrap" v-if="selectedRomPlatformFsSlug">
         <video
           v-if="selectedRom?.video_path || detail?.video_path"
@@ -164,7 +164,7 @@
         <div class="cp-gl-info-meta">
           <span v-if="detail?.ss_score" class="cp-gl-info-rating" :style="{color:sysColor}">{{ '★'.repeat(Math.round(detail.ss_score/4)) }}{{ '☆'.repeat(5-Math.round(detail.ss_score/4)) }} {{ (detail.ss_score/2).toFixed(1) }}</span>
           <span v-if="detail?.release_year || selectedRom?.release_year">{{ detail?.release_year || selectedRom?.release_year }}</span>
-          <span v-if="detail?.player_count">{{ detail.player_count }} Player{{ detail.player_count > 1 ? 's' : '' }}</span>
+          <span v-if="detail?.player_count">{{ detail.player_count > 1 ? t('nh.players', { count: detail.player_count }) : t('nh.player', { count: detail.player_count }) }}</span>
         </div>
         <div v-if="detail?.genres?.length" class="cp-gl-info-genres">
           <span v-for="g in detail.genres.slice(0,3)" :key="g" class="cp-gl-info-genre" :style="{borderColor:sysColor,color:sysColor}">{{ g }}</span>
@@ -190,16 +190,16 @@
 
       <div class="cp-help">
         <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> Games</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> Play</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> Back</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('nh.play') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">X</text></svg> Screenshots</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> ★ Favorite</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> Menu</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> {{ t('nh.menu') }}</span>
       </div>
     </template>
 
 
-    <!-- ═══ GAME CAROUSEL — full-screen fanart (Pop style) ═════════════ -->
+    <!-- ═══ GAME CAROUSEL - full-screen fanart (Pop style) ═════════════ -->
     <template v-if="state === 'games-carousel' || ((state === 'favorites' || state === 'recent') && gameView === 'carousel')">
       <!-- Full-screen game artwork -->
       <div class="cp-gc-bg">
@@ -209,29 +209,29 @@
       </div>
       <div class="cp-gc-dim" />
 
-      <!-- System name (top left) — SVG logo for platforms, text for favorites/recent -->
+      <!-- System name (top left) - SVG logo for platforms, text for favorites/recent -->
       <div class="cp-gc-sysname">
-        <template v-if="state === 'favorites'"><span>★ Favorites</span></template>
-        <template v-else-if="state === 'recent'"><span>⏱ Recently Played</span></template>
+        <template v-if="state === 'favorites'"><span>{{ t('nh.favorites') }}</span></template>
+        <template v-else-if="state === 'recent'"><span>{{ t('nh.recently_played') }}</span></template>
         <template v-else>
           <img :src="'/platforms/names/' + (currentPlatform?.fs_slug||'') + '.svg'" class="cp-gc-syslogo" @error="(e:any) => { e.target.style.display='none'; e.target.nextElementSibling.style.display='inline' }" />
           <span style="display:none">{{ currentPlatform?.name || '' }}</span>
         </template>
       </div>
 
-      <!-- Description panel (top right, glass) — only for platform games, not favorites/recent -->
+      <!-- Description panel (top right, glass) - only for platform games, not favorites/recent -->
       <div v-if="detail?.description && state !== 'favorites' && state !== 'recent'" class="cp-gc-desc" :style="{ borderColor: sysColor + '30', bottom: gcInfoStyle.bottom }">
         {{ detail.description }}
       </div>
 
-      <!-- Game info (centered above covers) — fade on game change -->
+      <!-- Game info (centered above covers) - fade on game change -->
       <transition name="cp-gc-fade" mode="out-in">
         <div class="cp-gc-info" v-if="selectedRom" :key="selectedRom.id" :style="gcInfoStyle">
           <div class="cp-gc-gamename">{{ selectedRom.title }}</div>
           <div v-if="selectedRom.ss_score" class="cp-gc-rating">{{ '★'.repeat(Math.round(selectedRom.ss_score / 4)) }}{{ '☆'.repeat(5 - Math.round(selectedRom.ss_score / 4)) }}</div>
           <div class="cp-gc-meta">
             <span v-if="selectedRom.release_year">{{ selectedRom.release_year }}</span>
-            <span v-if="selectedRom.player_count">{{ selectedRom.player_count }} Player{{ selectedRom.player_count > 1 ? 's' : '' }}</span>
+            <span v-if="selectedRom.player_count">{{ selectedRom.player_count > 1 ? t('nh.players', { count: selectedRom.player_count }) : t('nh.player', { count: selectedRom.player_count }) }}</span>
           </div>
         </div>
       </transition>
@@ -242,7 +242,7 @@
       <!-- Clock: top-right -->
       <div class="cp-gc-clock">{{ currentTime }}</div>
 
-      <!-- Cover carousel — absolute positioned, slides on romIdx change -->
+      <!-- Cover carousel - absolute positioned, slides on romIdx change -->
       <div class="cp-gc-strip">
         <div
           v-for="slot in carouselCovers" :key="slot.key"
@@ -261,10 +261,10 @@
 
       <div class="cp-help">
         <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> Games</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> Play</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> Back</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('nh.play') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> Favorite</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> Menu</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> {{ t('nh.menu') }}</span>
       </div>
     </template>
 
@@ -275,8 +275,8 @@
           <div class="cp-menu-title" :style="{color:sysColor}">SETTINGS</div>
           <!-- Tabs -->
           <div class="cp-menu-tabs">
-            <button class="cp-menu-tab" :class="{active:menuTab==='general'}" @click="menuTab='general';menuIdx=0">General</button>
-            <button class="cp-menu-tab" :class="{active:menuTab==='visuals'}" @click="menuTab='visuals';menuIdx=0">Visuals</button>
+            <button class="cp-menu-tab" :class="{active:menuTab==='general'}" @click="menuTab='general';menuIdx=0">{{ t('nh.tab_general') }}</button>
+            <button class="cp-menu-tab" :class="{active:menuTab==='visuals'}" @click="menuTab='visuals';menuIdx=0">{{ t('nh.tab_visuals') }}</button>
           </div>
           <!-- General tab -->
           <template v-if="menuTab==='general'">
@@ -286,16 +286,16 @@
           <template v-if="menuTab==='visuals'">
             <div v-for="(m,i) in menuItemsVisuals" :key="'v'+i" class="cp-menu-row" :class="{focus:menuIdx===i}" @click="m.action">{{m.label}}</div>
           </template>
-          <div class="cp-menu-hint">↑↓ Navigate · ←→ Tabs · A Toggle · B Close</div>
+          <div class="cp-menu-hint">{{ t('nh.menu_hint') }}</div>
         </div>
       </div>
     </transition>
     <transition name="cp-fade">
       <div v-if="exitOpen" class="cp-overlay" @click.self="exitOpen=false">
         <div class="cp-menu" style="width:280px;text-align:center">
-          <div class="cp-menu-title">Exit Couch Mode?</div>
-          <div class="cp-menu-row" :class="{focus:exitIdx===0}" @click="exitOpen=false">Stay</div>
-          <div class="cp-menu-row danger" :class="{focus:exitIdx===1}" @click="doExit">Exit</div>
+          <div class="cp-menu-title">{{ t('nh.exit_title') }}</div>
+          <div class="cp-menu-row" :class="{focus:exitIdx===0}" @click="exitOpen=false">{{ t('nh.stay') }}</div>
+          <div class="cp-menu-row danger" :class="{focus:exitIdx===1}" @click="doExit">{{ t('nh.exit') }}</div>
         </div>
       </div>
     </transition>
@@ -314,6 +314,7 @@ import { useRouter } from 'vue-router'
 
 const _gd = (window as any).__GD__
 const client = _gd.api
+const t = _gd.i18n?.t || ((k: string) => k)
 const router = useRouter()
 const { useCouchNav, couchNavPaused } = _gd.composables
 const getEjsCore = _gd.getEjsCore
@@ -342,7 +343,7 @@ const platMeta = computed(() => {
   return slug ? platformsJson.value[slug] ?? null : null
 })
 
-// System color from metadata (Colorful Pop's systemColor) — fallback to hardcoded
+// System color from metadata (Colorful Pop's systemColor) - fallback to hardcoded
 const sysColorFromMeta = computed(() => {
   const c = platMeta.value?.color
   return c ? '#' + c : null
@@ -475,7 +476,7 @@ function enterRecent() {
   state.value = 'recent'; updateCenterCoverHeight()
 }
 
-// Select button polling — same pattern as useCouchNav (requestAnimationFrame)
+// Select button polling - same pattern as useCouchNav (requestAnimationFrame)
 let _selFrame = 0
 let _selLastPress = 0
 const SEL_COOLDOWN = 300
@@ -600,7 +601,7 @@ function applyVolume() {
   const el = videoRef.value
   if (!el) return
   el.volume = videoVolume.value / 100
-  // Unmute after autoplay started — re-call play() because Edge/Chrome may pause on unmute
+  // Unmute after autoplay started - re-call play() because Edge/Chrome may pause on unmute
   if (videoVolume.value > 0) {
     try { el.muted = false; el.play().catch(() => {}) } catch { /* autoplay policy */ }
   } else {
@@ -741,18 +742,18 @@ const carouselCovers = computed(() => {
 const sysColor = computed(()=>sysColorFromMeta.value||'#4466aa')
 
 const menuItemsGeneral = computed(()=>[
-  {label:`View: ${gameView.value}`,action:()=>{gameView.value=gameView.value==='list'?'carousel':'list';localStorage.setItem('gd3_couch_view',gameView.value)}},
-  {label:`Launch: ${launchMode.value}`,action:()=>{const m=['tab','window','fullscreen'];launchMode.value=m[(m.indexOf(launchMode.value)+1)%3];localStorage.setItem('gd3_couch_launch',launchMode.value)}},
-  {label:`Bezel: ${bezelOn.value?'ON':'OFF'}`,action:()=>{bezelOn.value=!bezelOn.value;localStorage.setItem('gd3_couch_bezel',bezelOn.value?'on':'off')}},
-  {label:'Resume',action:()=>{menuOpen.value=false}},
-  {label:'Exit',action:()=>doExit(),danger:true},
+  {label:t('nh.menu_view',{value:gameView.value}),action:()=>{gameView.value=gameView.value==='list'?'carousel':'list';localStorage.setItem('gd3_couch_view',gameView.value)}},
+  {label:t('nh.menu_launch',{value:launchMode.value}),action:()=>{const m=['tab','window','fullscreen'];launchMode.value=m[(m.indexOf(launchMode.value)+1)%3];localStorage.setItem('gd3_couch_launch',launchMode.value)}},
+  {label:t('nh.menu_bezel',{value:bezelOn.value?'ON':'OFF'}),action:()=>{bezelOn.value=!bezelOn.value;localStorage.setItem('gd3_couch_bezel',bezelOn.value?'on':'off')}},
+  {label:t('nh.menu_resume'),action:()=>{menuOpen.value=false}},
+  {label:t('nh.menu_exit'),action:()=>doExit(),danger:true},
 ])
 const menuItemsVisuals = computed(()=>[
-  {label:`Ken Burns Animation: ${kenBurnsEnabled.value?'ON':'OFF'}`,action:toggleKenBurns},
-  {label:`Video Cycle: ${videoCycleEnabled.value?'ON':'OFF'}`,action:toggleVideoCycle},
-  {label:`Video Volume: ${videoVolume.value}%`,action:cycleVolume},
-  {label:`Icon Animation: ${iconAnimEnabled.value?'ON':'OFF'}`,action:toggleIconAnim},
-  {label:`Icon Style: ${iconAnimStyle.value}`,action:cycleIconAnimStyle},
+  {label:t('nh.menu_kenburns',{value:kenBurnsEnabled.value?'ON':'OFF'}),action:toggleKenBurns},
+  {label:t('nh.menu_videocycle',{value:videoCycleEnabled.value?'ON':'OFF'}),action:toggleVideoCycle},
+  {label:t('nh.menu_volume',{value:videoVolume.value}),action:cycleVolume},
+  {label:t('nh.menu_iconanim',{value:iconAnimEnabled.value?'ON':'OFF'}),action:toggleIconAnim},
+  {label:t('nh.menu_iconstyle',{value:iconAnimStyle.value}),action:cycleIconAnimStyle},
 ])
 const activeMenuItems = computed(()=>menuTab.value==='general'?menuItemsGeneral.value:menuItemsVisuals.value)
 
@@ -789,7 +790,7 @@ function backToSystems(){state.value='systems';roms.value=[];detail.value=null;s
 function doExit(){router.push('/')}
 function launchGame(){
   const rom=selectedRom.value;if(!rom)return
-  // Resolve platform — from currentPlatform or from favorites/recent saved data
+  // Resolve platform - from currentPlatform or from favorites/recent saved data
   let fsSlug = currentPlatform.value?.fs_slug || ''
   let platSlug = currentPlatform.value?.slug || ''
   if ((state.value === 'favorites' || state.value === 'recent') && rom.id) {
@@ -853,7 +854,7 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 .cp-sys-block-art{position:absolute;inset:-5%;width:110%;height:110%;object-fit:cover;opacity:.35;animation:cp-kenburns 30s ease-in-out infinite alternate}
 .cp-sys-block-art--static{animation:none!important;inset:0;width:100%;height:100%}
 @keyframes cp-kenburns{0%{transform:scale(1) translate(0,0)}50%{transform:scale(1.08) translate(-2%,-1%)}100%{transform:scale(1.04) translate(1%,2%)}}
-/* Platform image area — contains pop + overlay with crossfade */
+/* Platform image area - contains pop + overlay with crossfade */
 .cp-sys-img-wrap{position:absolute;left:36.7%;top:4.5%;width:60%;height:91%;z-index:5;overflow:hidden}
 
 /* Pop artwork */
@@ -865,13 +866,13 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 .cp-sys-overlay--visible{opacity:1}
 .cp-sys-overlay-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none}
 
-/* Video positioned in TV cutout — coordinates from videopos.json (overlay-relative) */
+/* Video positioned in TV cutout - coordinates from videopos.json (overlay-relative) */
 .cp-sys-video{position:absolute;object-fit:cover;z-index:1}
 
 /* Scanlines on video only (not on overlay/TV) */
 .cp-sys-video-scanlines{position:absolute;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px)}
 
-/* Wheel logo of playing ROM — bottom right of overlay */
+/* Wheel logo of playing ROM - bottom right of overlay */
 .cp-sys-video-wheel{position:absolute;bottom:8%;z-index:3;display:flex;justify-content:center;opacity:0;animation:cp-wheel-in .6s ease .5s forwards}
 .cp-sys-video-wheel-img{max-width:100%;max-height:8vh;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7))}
 .cp-sys-video-wheel-text{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.5vh,24px);font-weight:900;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
@@ -879,7 +880,7 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 
 /* Year: 2.6%, 15% */
 .cp-sys-year{position:absolute;left:2.6%;top:15%;z-index:10;font-size:clamp(14px,3vh,28px);font-weight:300;letter-spacing:.03em}
-/* Name: 2.6%, 22.5% — shows SVG logo, fallback to text */
+/* Name: 2.6%, 22.5% - shows SVG logo, fallback to text */
 .cp-sys-name{position:absolute;left:2.6%;top:22.5%;width:30.7%;height:27.5%;z-index:10;display:flex;align-items:flex-start}
 .cp-sys-name-logo{max-width:100%;max-height:12vh;object-fit:contain;filter:brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0,0,0,.5))}
 .cp-sys-name-text{font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vh,52px);font-weight:900;line-height:1.1}
@@ -902,7 +903,7 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 
 /* Nav arrows: inside right color block, bottom-right corner */
 
-/* ═══ GAME LIST — list-video style ═══════════════════════════════════ */
+/* ═══ GAME LIST - list-video style ═══════════════════════════════════ */
 /* Color panel: 2.6%, 4.6%, 37% wide (list only, not full 56%) */
 .cp-gl-panel{position:absolute;left:2.6%;top:4.6%;width:28%;height:90.8%;z-index:1;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:6px}
 .cp-gl-panel-count{position:absolute;right:12px;bottom:10px;font-family:'Orbitron',sans-serif;font-size:clamp(10px,1.3vh,13px);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.25)}
@@ -955,7 +956,7 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 .cp-gl-info-desc::-webkit-scrollbar{display:none}
 .cp-gl-info-hltb{display:flex;gap:16px;font-size:clamp(13px,1.6vh,16px);color:rgba(255,255,255,.4)}
 
-/* ═══ GAME CAROUSEL — Colorful Pop style ═════════════════════════════ */
+/* ═══ GAME CAROUSEL - Colorful Pop style ═════════════════════════════ */
 .cp-gc-bg{position:absolute;inset:0;z-index:0}
 .cp-gc-bg-img{width:100%;height:100%;object-fit:cover;filter:brightness(.4) saturate(1.1)}
 .cp-gc-dim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.05) 30%,rgba(0,0,0,.4) 70%,rgba(0,0,0,.8) 100%)}
@@ -968,7 +969,7 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 .cp-gc-desc{position:absolute;right:5%;width:28%;max-height:calc(clamp(12px,1.5vh,15px) * 1.6 * 10 + 28px);z-index:10;padding:14px 16px;border-radius:8px;background:color-mix(in srgb, var(--sys-color) 10%, rgba(0,0,0,.25));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid;font-size:clamp(12px,1.5vh,15px);line-height:1.6;color:rgba(255,255,255,.5);overflow-y:auto;scrollbar-width:none;transition:bottom .4s}
 .cp-gc-desc::-webkit-scrollbar{display:none}
 
-/* Game info: centered above the main cover — bottom set dynamically by gcInfoStyle */
+/* Game info: centered above the main cover - bottom set dynamically by gcInfoStyle */
 .cp-gc-info{position:absolute;left:50%;transform:translateX(-50%);width:60%;z-index:12;text-align:center;transition:bottom .4s ease}
 .cp-gc-gamename{font-family:'Orbitron',sans-serif;font-size:clamp(24px,5vh,56px);font-weight:900;line-height:1.08;text-shadow:0 2px 20px rgba(0,0,0,.9);margin-bottom:8px}
 .cp-gc-gamename{font-size:clamp(22px,4.5vh,52px);margin-bottom:4px}

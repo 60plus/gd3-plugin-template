@@ -1,7 +1,7 @@
 <template>
   <div class="nh-lib">
 
-    <!-- ── Toolbar (no search — navbar nh-search handles it) ──────────── -->
+    <!-- ── Toolbar (no search - navbar nh-search handles it) ──────────── -->
     <div class="nh-lib-toolbar">
       <div class="nh-lib-toolbar-left">
         <span class="nh-lib-count">{{ totalLabel }}</span>
@@ -32,7 +32,7 @@
     <!-- ── Empty State ──────────────────────────────────────────────────── -->
     <div v-if="!loading && filteredItems.length === 0" class="nh-lib-empty">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-      <div class="nh-lib-empty-text">No games found</div>
+      <div class="nh-lib-empty-text">{{ t('nh.no_games') }}</div>
     </div>
 
     <!-- ── Grid + Alphabet Sidebar ─────────────────────────────────────── -->
@@ -81,7 +81,7 @@
 
     </div><!-- /nh-lib-body -->
 
-    <!-- ── Platform Grid (emulation home) — Big cinematic cards ─────────── -->
+    <!-- ── Platform Grid (emulation home) - Big cinematic cards ─────────── -->
     <div
       v-if="libType === 'emulation-home' && filteredItems.length > 0"
       class="nh-bp-grid"
@@ -98,7 +98,7 @@
         <div class="nh-bp-info nh-bp-info--plat">
           <img :src="'/platforms/names/' + p.fs_slug + '.svg'" class="nh-bp-plat-logo" alt="" @error="onPlatLogoError" />
           <div v-if="platLogoFail[p.fs_slug]" class="nh-bp-plat-name-text">{{ p.name }}</div>
-          <div class="nh-bp-plat-count">{{ p.rom_count }} ROMs</div>
+          <div class="nh-bp-plat-count">{{ t('nh.roms_count', { count: p.rom_count }) }}</div>
         </div>
       </div>
     </div>
@@ -118,6 +118,7 @@ import { useRouter, useRoute } from 'vue-router'
 
 const _gd = (window as any).__GD__
 const client = _gd.api
+const t = _gd.i18n?.t || ((k: string) => k)
 const auth = _gd.stores.auth()
 const router = useRouter()
 const route = useRoute()
@@ -159,19 +160,25 @@ const libType = computed<'gog' | 'games' | 'emulation-home' | 'emulation'>(() =>
 
 const activePlatform = computed(() => libType.value === 'emulation' ? (route.params.platform as string || '') : '')
 
+// Reset sortBy when library type changes (emulation uses name_asc, others use title)
+watch(libType, (t) => {
+  if (t === 'emulation-home' || t === 'emulation') sortBy.value = 'name_asc'
+  else sortBy.value = 'title'
+}, { immediate: true })
+
 /* ── Sort options ───────────────────────────────────────────────────────── */
 const sortOptions = computed(() => {
   if (libType.value === 'emulation-home') return [
-    { value: 'name_asc', label: 'A → Z' }, { value: 'name_desc', label: 'Z → A' },
-    { value: 'roms_desc', label: 'Most ROMs' }, { value: 'roms_asc', label: 'Fewest' },
+    { value: 'name_asc', label: t('nh.sort_az') }, { value: 'name_desc', label: t('nh.sort_za') },
+    { value: 'roms_desc', label: t('nh.sort_most_roms') }, { value: 'roms_asc', label: t('nh.sort_fewest') },
   ]
   if (libType.value === 'emulation') return [
-    { value: 'name_asc', label: 'A → Z' }, { value: 'name_desc', label: 'Z → A' },
-    { value: 'year_desc', label: 'Newest' }, { value: 'year_asc', label: 'Oldest' },
+    { value: 'name_asc', label: t('nh.sort_az') }, { value: 'name_desc', label: t('nh.sort_za') },
+    { value: 'year_desc', label: t('nh.sort_newest') }, { value: 'year_asc', label: t('nh.sort_oldest') },
   ]
   return [
-    { value: 'title', label: 'A → Z' }, { value: 'title_desc', label: 'Z → A' },
-    { value: 'rating', label: 'Top Rated' }, { value: 'release', label: 'Newest' },
+    { value: 'title', label: t('nh.sort_az') }, { value: 'title_desc', label: t('nh.sort_za') },
+    { value: 'rating', label: t('nh.sort_top_rated') }, { value: 'release', label: t('nh.sort_newest') },
   ]
 })
 
@@ -180,7 +187,7 @@ const searchPlaceholder = computed(() => {
   return m[libType.value] || 'Search…'
 })
 
-/* ── Sizes — persist to localStorage ────────────────────────────────────── */
+/* ── Sizes - persist to localStorage ────────────────────────────────────── */
 const sizes = [
   { id: 's', label: 'S', min: 240 },
   { id: 'm', label: 'M', min: 320 },
@@ -227,9 +234,9 @@ const filteredItems = computed(() => {
 
 const totalPages = computed(() => Math.ceil(totalItems.value / perPage))
 const totalLabel = computed(() => {
-  if (libType.value === 'emulation-home') return `${filteredItems.value.length} platforms`
-  if (libType.value === 'emulation') return `${totalItems.value} ROMs`
-  return `${filteredItems.value.length} games`
+  if (libType.value === 'emulation-home') return t('nh.platforms_count', { count: filteredItems.value.length })
+  if (libType.value === 'emulation') return t('nh.roms_count', { count: totalItems.value })
+  return t('nh.games_count', { count: filteredItems.value.length })
 })
 
 /* ── Alphabet quick nav ─────────────────────────────────────────────────── */
@@ -314,7 +321,7 @@ function itemThumb(item: any): string {
   // No background → cover is used as card bg, skip thumb to avoid duplicate
   if (!bg) return ''
   if (cover !== bg) return cover
-  // cover === background — try cover_url (original GOG cover)
+  // cover === background - try cover_url (original GOG cover)
   if (item.cover_url) return gogCover({ ...item, cover_path: null })
   return ''
 }
@@ -365,7 +372,7 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-/* Fonts loaded by theme system via plugin.py font field — no @import needed */
+/* Fonts loaded by theme system via plugin.py font field - no @import needed */
 
 .nh-lib { display: flex; flex-direction: column; min-height: 100%; padding: 0 28px 48px; }
 
@@ -389,7 +396,7 @@ onMounted(fetchData)
 .nh-lib-body { display: flex; gap: 0; position: relative; }
 .nh-lib-body .nh-bp-grid { flex: 1; min-width: 0; }
 
-/* ═══ ALPHABET NAV — vertical sticky right ═════════════════════════════ */
+/* ═══ ALPHABET NAV - vertical sticky right ═════════════════════════════ */
 .nh-alpha {
   position: sticky; top: 60px; align-self: flex-start;
   display: flex; flex-direction: column; gap: 1px;
@@ -457,7 +464,7 @@ onMounted(fetchData)
 
 .nh-bp-plat-logo { height: calc(var(--nh-bp-min, 320px) * 0.065); width: auto; max-width: 80%; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 0 8px var(--pglow)); }
 .nh-bp-plat-name-text { font-family: 'Orbitron', sans-serif; font-size: calc(var(--nh-bp-min, 320px) * 0.04); font-weight: 700; color: #fff; text-shadow: 0 0 8px var(--pglow); }
-.nh-bp-plat-count { padding: calc(var(--nh-bp-min, 320px) * 0.012) calc(var(--nh-bp-min, 320px) * 0.04); border-radius: 4px; background: linear-gradient(135deg, var(--pl, #00d4ff), var(--pl2, #7b2fff)); font-family: 'Orbitron', sans-serif; font-size: calc(var(--nh-bp-min, 320px) * 0.03); font-weight: 700; color: #fff; letter-spacing: .04em; margin-top: calc(var(--nh-bp-min, 320px) * 0.02); }
+.nh-bp-plat-count { padding: calc(var(--nh-bp-min, 320px) * 0.012) calc(var(--nh-bp-min, 320px) * 0.04); border-radius: 4px; background: color-mix(in srgb, var(--pl, #00d4ff) 20%, transparent); backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--pl, #00d4ff) 30%, transparent); font-family: 'Orbitron', sans-serif; font-size: calc(var(--nh-bp-min, 320px) * 0.03); font-weight: 700; color: var(--pl-light, #fff); letter-spacing: .04em; margin-top: calc(var(--nh-bp-min, 320px) * 0.02); }
 
 /* ═══ CARD EFFECT TOGGLES ══════════════════════════════════════════════ */
 .nh-bp-no-lift:hover { transform: none !important; }
