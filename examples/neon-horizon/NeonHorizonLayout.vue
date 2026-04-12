@@ -1,10 +1,10 @@
 <template>
   <div class="nh-shell" :class="{ 'nh-no-anim': !themeStore.animations }">
-    <!-- ── Animated gradient background ─────────────────────────────────── -->
-    <div v-if="themeStore.ambient" class="nh-bg-gradient" />
+    <!-- ── Ambient orbs (same component as Modern - respects all orb settings) -->
+    <AmbientBackground />
 
-    <!-- ── Floating particles ───────────────────────────────────────────── -->
-    <div v-if="themeStore.animations && particleCount > 0" class="nh-particles">
+    <!-- ── Floating particles (tied to Orb Motion setting) ──────────────── -->
+    <div v-if="themeStore.animations && themeStore.orbMotion && particleCount > 0" class="nh-particles">
       <div
         v-for="i in particleCount"
         :key="i"
@@ -19,6 +19,12 @@
       />
     </div>
 
+    <!-- ── Grid pattern overlay ─────────────────────────────────────────── -->
+    <div v-if="themeStore.grid" class="nh-grid-overlay" />
+
+    <!-- ── Scanline overlay (from theme setting) ────────────────────────── -->
+    <div v-if="scanlineEnabled" class="nh-scanlines" />
+
     <!-- ── Navbar ────────────────────────────────────────────────────────── -->
     <nav class="nh-navbar">
       <router-link to="/" class="nh-logo">
@@ -26,10 +32,10 @@
       </router-link>
 
       <div class="nh-nav-tabs">
-        <router-link to="/" class="nh-tab" :class="{ active: isHomePage }">Home</router-link>
-        <router-link v-if="isAdmin" to="/library" class="nh-tab" :class="{ active: isRouteActive('/library') }">GOG Library</router-link>
-        <router-link to="/games" class="nh-tab" :class="{ active: isRouteActive('/games') }">Games Library</router-link>
-        <router-link to="/emulation" class="nh-tab" :class="{ active: isRouteActive('/emulation') }">Emulation</router-link>
+        <router-link to="/" class="nh-tab" :class="{ active: isHomePage }">{{ t('nav.home') }}</router-link>
+        <router-link v-if="isAdmin" to="/library" class="nh-tab" :class="{ active: isRouteActive('/library') }">{{ t('nav.gog_library') }}</router-link>
+        <router-link to="/games" class="nh-tab" :class="{ active: isRouteActive('/games') }">{{ t('nav.games_library') }}</router-link>
+        <router-link to="/emulation" class="nh-tab" :class="{ active: isRouteActive('/emulation') }">{{ t('nav.emulation') }}</router-link>
       </div>
 
       <div class="nh-nav-center">
@@ -38,7 +44,7 @@
           <input
             v-model="searchQuery"
             class="nh-search-input"
-            placeholder="Search games…"
+            :placeholder="t('nav.search')"
             @focus="searchFocused = true"
             @blur="searchFocused = false"
           />
@@ -52,6 +58,7 @@
           <div class="nh-user-chip">
             <img v-if="avatarSrc" :src="avatarSrc" class="nh-avatar-img" alt="" @error="(e) => (e.target as HTMLImageElement).style.display='none'" />
             <div v-else class="nh-avatar-ph">{{ initials }}</div>
+            <span v-if="notifBadge" class="nh-chip-badge">{{ notifCount }}</span>
           </div>
           <transition name="nh-menu-drop">
             <div v-if="showUserMenu" class="nh-user-menu">
@@ -65,19 +72,28 @@
                   <div class="nh-menu-role">{{ userRole }}</div>
                 </div>
               </div>
+              <template v-if="notifActive.length">
+                <div v-for="n in notifActive" :key="n.id" class="nh-notif-item" @click.stop>
+                  <span class="nh-notif-dot" />
+                  <span class="nh-notif-label">{{ n.label }}</span>
+                  <button v-if="n.action" class="nh-notif-action" @click="showUserMenu = false; $router.push(n.action); dismissNotif(n.id)">{{ n.actionLabel || 'Go' }}</button>
+                  <button class="nh-notif-dismiss" @click="dismissNotif(n.id)">&times;</button>
+                </div>
+                <div class="nh-menu-sep" />
+              </template>
               <div class="nh-menu-sep" />
               <button class="nh-menu-item" @click="showUserMenu = false; $router.push('/profile')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Profile
+                {{ t('nav.profile') }}
               </button>
               <button class="nh-menu-item" @click="showUserMenu = false; $router.push('/settings')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Settings
+                {{ t('nav.settings') }}
               </button>
               <div class="nh-menu-sep" />
               <button class="nh-menu-item nh-menu-item--danger" @click="handleLogout">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
+                {{ t('nav.logout') }}
               </button>
             </div>
           </transition>
@@ -92,7 +108,7 @@
 
     <!-- ── Main content ─────────────────────────────────────────────────── -->
     <main class="nh-main" :class="{ 'nh-main--full': $route.meta.fullBleed }">
-      <!-- Global search — takes over entire content when query is active -->
+      <!-- Global search - takes over entire content when query is active -->
       <NeonHorizonSearch v-if="searchQuery" :query="searchQuery" :key="'search-'+searchQuery" />
       <!-- Custom home page -->
       <NeonHorizonHome v-else-if="isHomePage" />
@@ -114,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NeonHorizonHome from "./NeonHorizonHome.vue";
 import NeonHorizonLibrary from "./NeonHorizonLibrary.vue";
@@ -122,15 +138,49 @@ import NeonHorizonSearch from "./NeonHorizonSearch.vue";
 
 // Use GD plugin API for stores (not compiled into plugin bundle)
 const _gd = (window as any).__GD__;
+const t = _gd.i18n?.t || ((k: string) => k);
 const auth = _gd.stores.auth();
 const socketStore = _gd.stores.socket();
 const themeStore = _gd.stores.theme();
 
-// Read particle count from theme settings (plugin.py declares 'particleCount' setting)
-const particleCount = computed(() => {
-  const val = themeStore.getThemeSettingValue('particleCount')
-  return Number(val) || 6
-});
+// Notification system via __GD__
+const _notifApi = _gd.notifications || {};
+const notifItems = ref<any[]>([]);
+const notifDismissedIds = ref<Set<string>>(new Set(JSON.parse(sessionStorage.getItem('gd3_notif_dismissed') || '[]')));
+const notifActive = computed(() => notifItems.value.filter((n: any) => n.count > 0 && !notifDismissedIds.value.has(n.id)));
+const notifCount = computed(() => notifActive.value.reduce((s: number, n: any) => s + n.count, 0));
+const notifBadge = computed(() => notifCount.value > 0);
+function dismissNotif(id: string) {
+  notifDismissedIds.value.add(id);
+  sessionStorage.setItem('gd3_notif_dismissed', JSON.stringify([...notifDismissedIds.value]));
+  if (_notifApi.dismiss) _notifApi.dismiss(id);
+}
+// Poll notification store items (Pinia reactivity doesn't cross plugin boundary)
+setInterval(() => {
+  try {
+    const s = _notifApi.store;
+    if (s?.items) notifItems.value = [...s.items];
+  } catch {}
+}, 2000);
+
+// Read per-theme settings by polling CSS vars (Pinia reactivity unreliable in compiled plugins)
+const particleCount = ref(6)
+const scanlineEnabled = ref(false)
+
+function pollThemeSettings() {
+  const cs = getComputedStyle(document.documentElement)
+  const pc = cs.getPropertyValue('--nh-particle-count').trim()
+  particleCount.value = pc !== '' ? Number(pc) : 6
+  const sl = cs.getPropertyValue('--nh-scanlines').trim()
+  scanlineEnabled.value = sl === '1'
+}
+
+let _settingsPoll: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  pollThemeSettings()
+  _settingsPoll = setInterval(pollThemeSettings, 1500)
+})
+onUnmounted(() => { if (_settingsPoll) clearInterval(_settingsPoll) })
 const router = useRouter();
 const route  = useRoute();
 
@@ -173,7 +223,7 @@ function isRouteActive(prefix: string): boolean {
   return route.path === prefix || route.path.startsWith(prefix + '/');
 }
 
-// Search sync — works on ALL routes (NH search is global)
+// Search sync - works on ALL routes (NH search is global)
 watch(searchQuery, (q) => {
   const cur = Array.isArray(route.query.q) ? route.query.q[0] : route.query.q;
   if (q !== (cur || "")) {
@@ -228,20 +278,35 @@ const vClickOutside = {
 /* ═══════════════════════════════════════════════════════════════════════════
    ANIMATED GRADIENT BACKGROUND
    ═══════════════════════════════════════════════════════════════════════════ */
-.nh-bg-gradient {
+/* AmbientBackground component handles orbs - no static gradient needed */
+
+/* ── Grid pattern overlay ─────────────────────────────────────────────── */
+.nh-grid-overlay {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pglow2, rgba(123,47,255,.2)) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 20%, var(--pglow, rgba(0,212,255,.15)) 0%, transparent 50%);
-  animation: nh-bg-shift 20s ease-in-out infinite alternate;
+  background-image:
+    linear-gradient(rgba(0,212,255,.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.15) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mix-blend-mode: screen;
 }
 
-@keyframes nh-bg-shift {
-  0%   { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(30deg); }
+/* ── Scanline overlay ─────────────────────────────────────────────────── */
+.nh-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.15) 2px,
+    rgba(0,0,0,.15) 4px
+  );
+  mix-blend-mode: multiply;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -274,7 +339,7 @@ const vClickOutside = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   NAVBAR — exactly matching theme-preview.html nav-tabs style
+   NAVBAR - exactly matching theme-preview.html nav-tabs style
    ═══════════════════════════════════════════════════════════════════════════ */
 .nh-navbar {
   display: flex;
@@ -284,9 +349,7 @@ const vClickOutside = {
   flex-shrink: 0;
   z-index: 100;
   position: relative;
-  background: rgba(5, 5, 15, .9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(5, 5, 15, .45);
   border-bottom: 1px solid var(--glass-border, rgba(0,212,255,.12));
 }
 
@@ -335,13 +398,13 @@ const vClickOutside = {
 .nh-logo-img {
   height: 36px;
   width: auto;
-  filter: drop-shadow(0 0 12px var(--pglow, rgba(0,212,255,.4)));
+  filter: drop-shadow(0 0 calc(12px * var(--nh-glow-mult, 1)) var(--pglow, rgba(0,212,255,.4)));
   transition: filter .2s;
 }
 
 .nh-logo:hover .nh-logo-img {
-  filter: drop-shadow(0 0 20px var(--pglow, rgba(0,212,255,.4)))
-          drop-shadow(0 0 40px var(--pglow2, rgba(0,212,255,.2)));
+  filter: drop-shadow(0 0 calc(20px * var(--nh-glow-mult, 1)) var(--pglow, rgba(0,212,255,.4)))
+          drop-shadow(0 0 calc(40px * var(--nh-glow-mult, 1)) var(--pglow2, rgba(0,212,255,.2)));
 }
 
 /* Search */
@@ -401,15 +464,17 @@ const vClickOutside = {
 /* User chip */
 .nh-user-wrap { position: relative; }
 .nh-user-chip {
+  position: relative;
   width: 34px;
   height: 34px;
   border-radius: 50%;
   border: 2px solid var(--pl);
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   box-shadow: 0 0 10px var(--pglow2);
   transition: all .15s;
 }
+.nh-user-chip img, .nh-user-chip .nh-avatar-ph { border-radius: 50%; overflow: hidden; }
 .nh-user-chip:hover {
   box-shadow: 0 0 16px var(--pglow);
   transform: scale(1.05);
@@ -430,9 +495,8 @@ const vClickOutside = {
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
-  background: rgba(10, 6, 24, .97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(10, 6, 24, .5);
+  /* backdrop-filter applied via :style="glassStyle" */
   border: 1px solid var(--glass-border, rgba(0,212,255,.12));
   border-radius: 16px;
   overflow: hidden;
@@ -555,4 +619,26 @@ const vClickOutside = {
   .nh-main { padding: 10px 12px; }
   .nh-particles { display: none; }
 }
+.nh-chip-badge {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, .85);
+  color: #fff; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  animation: nh-shake 3s ease-in-out infinite;
+  pointer-events: none; z-index: 2;
+}
+@keyframes nh-shake {
+  0%, 88%, 100% { transform: none; }
+  90% { transform: rotate(-10deg) scale(1.15); }
+  92% { transform: rotate(10deg) scale(1.15); }
+  94% { transform: rotate(-6deg); }
+  96% { transform: rotate(6deg); }
+  98% { transform: rotate(0); }
+}
+.nh-notif-item { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 11px; color: var(--text, #fff); }
+.nh-notif-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
+.nh-notif-label { flex: 1; font-family: 'Rajdhani', sans-serif; }
+.nh-notif-action { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; background: color-mix(in srgb, var(--pl) 20%, transparent); border: 1px solid color-mix(in srgb, var(--pl) 40%, transparent); color: var(--pl-light, #fff); }
+.nh-notif-dismiss { background: none; border: none; color: rgba(255,255,255,.4); font-size: 14px; cursor: pointer; padding: 0 2px; }
 </style>

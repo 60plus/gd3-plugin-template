@@ -474,23 +474,23 @@ onUnmounted(stopHeroRotation)
   display: flex;
   flex-direction: column;
   padding: 0 28px;
-  margin-top: 36px;
+  margin-top: 14px;
   overflow: visible;
 }
 
 .nh-recent:last-child {
-  padding-bottom: 48px;
+  padding-bottom: 20px;
 }
 
 /* ── Section headers ─────────────────────────────────────────────────────── */
 .nh-section-head {
   display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 .nh-section-title {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .2em; text-transform: uppercase;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
   color: var(--pl, #00d4ff);
 }
 .nh-section-link {
@@ -517,9 +517,9 @@ onUnmounted(stopHeroRotation)
 
 /* ── Horizontal scroll ───────────────────────────────────────────────────── */
 .nh-scroll {
-  display: flex; gap: 14px;
+  display: flex; gap: 12px;
   overflow-x: auto;
-  padding-top: 12px; padding-bottom: 12px;
+  padding-top: 6px; padding-bottom: 6px;
   scroll-behavior: smooth; scrollbar-width: none;
 }
 .nh-scroll::-webkit-scrollbar { display: none; }

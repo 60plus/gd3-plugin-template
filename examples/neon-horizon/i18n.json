@@ -57,7 +57,12 @@
     "nh.setting_glass_opacity": "Glass Opacity",
     "nh.setting_glass_opacity_hint": "Background opacity of glass panels (lower = more transparent, blur more visible)",
     "nh.setting_scanlines": "Scanline Overlay",
-    "nh.setting_scanlines_hint": "Subtle CRT-style horizontal scanline effect"
+    "nh.setting_scanlines_hint": "Subtle CRT-style horizontal scanline effect",
+    "nh.games_label": "GAMES",
+    "nh.favorites_label": "FAVORITES",
+    "nh.games_browse": "Games",
+    "nh.screenshots_label": "Screenshots",
+    "nh.favorite_label": "Favorite"
   },
   "pl": {
     "nh.view_details": "Szczegoly",
@@ -117,6 +122,11 @@
     "nh.setting_glass_opacity": "Przezroczystosc szkla",
     "nh.setting_glass_opacity_hint": "Przezroczystosc tla paneli (mniej = bardziej przezroczyste, rozmycie bardziej widoczne)",
     "nh.setting_scanlines": "Linie skanowania",
-    "nh.setting_scanlines_hint": "Delikatny efekt poziomych linii w stylu CRT"
+    "nh.setting_scanlines_hint": "Delikatny efekt poziomych linii w stylu CRT",
+    "nh.games_label": "GRY",
+    "nh.favorites_label": "ULUBIONE",
+    "nh.games_browse": "Gry",
+    "nh.screenshots_label": "Zrzuty ekranu",
+    "nh.favorite_label": "Ulubione"
   }
 }

@@ -77,12 +77,12 @@
         <div class="cp-sys-bottom-block cp-sys-bottom-block--dark">
           <img :key="'wicon-'+currentPlatform?.fs_slug" :src="'/platforms/icons/' + (currentPlatform?.fs_slug||'') + '.png'" class="cp-sys-bottom-icon" />
           <div class="cp-sys-bottom-num">{{ currentPlatform?.rom_count || 0 }}</div>
-          <div class="cp-sys-bottom-label">GAMES</div>
+          <div class="cp-sys-bottom-label">{{ t('nh.games_label') }}</div>
         </div>
         <div class="cp-sys-bottom-block">
           <img :src="pluginAsset('images/badge-favorite.svg')" class="cp-sys-bottom-fav-icon" />
           <div class="cp-sys-bottom-num">{{ platformFavCount }}</div>
-          <div class="cp-sys-bottom-label">FAVORITES</div>
+          <div class="cp-sys-bottom-label">{{ t('nh.favorites_label') }}</div>
         </div>
         <div class="cp-sys-bottom-block cp-sys-bottom-block--light">
           <!-- Colored icon from plugin assets -->
@@ -105,7 +105,7 @@
     <template v-if="state === 'games-list' || ((state === 'favorites' || state === 'recent') && gameView === 'list')">
       <!-- Colored panel behind list -->
       <div class="cp-gl-panel">
-        <div class="cp-gl-panel-count">{{ roms.length }} {{ roms.length === 1 ? 'Game' : 'Games' }}</div>
+        <div class="cp-gl-panel-count">{{ roms.length }} {{ t('nh.games_browse') }}</div>
       </div>
 
       <!-- System logo (top, above list) -->
@@ -189,11 +189,11 @@
       </div>
 
       <div class="cp-help">
-        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> Games</span>
+        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> {{ t('nh.games_browse') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('nh.play') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">X</text></svg> Screenshots</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> ★ Favorite</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">X</text></svg> {{ t('nh.screenshots_label') }}</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> {{ t('nh.favorite_label') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> {{ t('nh.menu') }}</span>
       </div>
     </template>
@@ -260,10 +260,10 @@
       </div>
 
       <div class="cp-help">
-        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> Games</span>
+        <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> {{ t('nh.games_browse') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('nh.play') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
-        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> Favorite</span>
+        <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Y</text></svg> {{ t('nh.favorite_label') }}</span>
         <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn-wide" viewBox="0 0 36 24"><rect x="1" y="4" width="34" height="16" rx="8" fill="currentColor" opacity=".3"/><rect x="1" y="4" width="34" height="16" rx="8" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="18" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="currentColor">START</text></svg> {{ t('nh.menu') }}</span>
       </div>
     </template>
@@ -286,7 +286,12 @@
           <template v-if="menuTab==='visuals'">
             <div v-for="(m,i) in menuItemsVisuals" :key="'v'+i" class="cp-menu-row" :class="{focus:menuIdx===i}" @click="m.action">{{m.label}}</div>
           </template>
-          <div class="cp-menu-hint">{{ t('nh.menu_hint') }}</div>
+          <div class="cp-menu-hint">
+            <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm0 4l5 5 5-5H7z" fill="currentColor"/></svg> {{ t('nh.navigate') }}</span>
+            <span class="cp-help-item"><svg class="cp-help-icon" viewBox="0 0 24 24"><path d="M10 7l-5 5 5 5V7zm4 0v10l5-5-5-5z" fill="currentColor"/></svg> {{ t('nh.tab_general') }}</span>
+            <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">A</text></svg> {{ t('couch.confirm') }}</span>
+            <span class="cp-help-item"><svg class="cp-help-icon cp-help-btn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">B</text></svg> {{ t('nh.back') }}</span>
+          </div>
         </div>
       </div>
     </transition>
@@ -352,17 +357,19 @@ const sysColorFromMeta = computed(() => {
 // Description with browser language support
 const platDescription = computed(() => {
   const meta = platMeta.value
-  if (!meta) return currentPlatform.value?.description || ''
-  // Try browser language
-  const lang = navigator.language?.replace('-', '_') || 'en'
+  const wiki = currentPlatform.value?.description || ''
+  if (!meta) return wiki
+  const lang = localStorage.getItem('gd3_locale') || 'en'
   const translations = meta.translations || {}
-  // Try exact match (e.g. pl_PL), then prefix (pl), then English default
-  if (translations[lang]) return translations[lang]
-  const prefix = lang.split('_')[0]
+  // Priority: XML(UI lang) > Wiki(DB) > XML(en)
+  const xmlLocal = translations[lang] || translations[lang + '_' + lang.toUpperCase()] || ''
+  if (xmlLocal) return xmlLocal
+  if (wiki) return wiki
+  // Fallback to prefix match then English
   for (const key of Object.keys(translations)) {
-    if (key.startsWith(prefix)) return translations[key]
+    if (key.startsWith(lang)) return translations[key]
   }
-  return meta.description || currentPlatform.value?.description || ''
+  return meta.description || ''
 })
 
 type State = 'systems'|'games-list'|'games-carousel'|'favorites'|'recent'
@@ -739,7 +746,17 @@ const carouselCovers = computed(() => {
   }
   return slots
 })
-const sysColor = computed(()=>sysColorFromMeta.value||'#4466aa')
+const sysColor = computed(()=>{
+  // In favorites/recent: use the selected ROM's platform color
+  if ((state.value === 'favorites' || state.value === 'recent') && selectedRom.value) {
+    const saved = [...favorites.value, ...recentlyPlayed.value].find(f => f.id === selectedRom.value!.id)
+    if (saved?.platform_fs_slug) {
+      const meta = platformsJson.value[saved.platform_fs_slug]
+      if (meta?.color) return '#' + meta.color
+    }
+  }
+  return sysColorFromMeta.value||'#4466aa'
+})
 
 const menuItemsGeneral = computed(()=>[
   {label:t('nh.menu_view',{value:gameView.value}),action:()=>{gameView.value=gameView.value==='list'?'carousel':'list';localStorage.setItem('gd3_couch_view',gameView.value)}},
@@ -1031,6 +1048,10 @@ onUnmounted(()=>{if(_clockInterval)clearInterval(_clockInterval)})
 .cp-menu-tab{flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.35);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
 .cp-menu-tab:hover{color:rgba(255,255,255,.6)}
 .cp-menu-tab.active{color:var(--sys-color,#4466aa);border-bottom-color:var(--sys-color,#4466aa)}
+.cp-menu-hint{margin-top:10px;padding:8px 0 0;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.02em;display:flex;gap:10px;justify-content:center;align-items:center}
+.cp-menu-hint .cp-help-item{gap:4px}
+.cp-menu-hint .cp-help-icon{width:20px;height:20px}
+.cp-menu-hint .cp-help-btn{width:22px;height:22px}
 
 /* ═══ ICON ANIMATIONS ════════════════════════════════════════════════ */
 .cp-icon-anim--shake{animation:cp-shake 8s ease-in-out infinite}
