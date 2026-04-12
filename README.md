@@ -13,9 +13,9 @@ Templates, examples, and documentation for building plugins for [GamesDownloader
 | **theme** | Custom layouts, Vue components, CSS, JS, couch mode | `FrontendProviderSpec` | NEON HORIZON |
 | **metadata** | Scrape game info from external sources | `MetadataProviderSpec` | PPE.pl Scraper |
 | **lifecycle** | Hook into app events (startup, game added, download done) | `LifecycleSpec` | Description Translator |
-| **download** | Add new download sources | `DownloadProviderSpec` | — |
-| **library** | Scan game libraries from new sources | `LibrarySourceSpec` | — |
-| **widget** | Add dashboard cards | `WidgetSpec` | — |
+| **download** | Add new download sources | `DownloadProviderSpec` | - |
+| **library** | Scan game libraries from new sources | `LibrarySourceSpec` | - |
+| **widget** | Add dashboard cards | `WidgetSpec` | - |
 
 ---
 
@@ -103,10 +103,10 @@ A metadata scraper that finds Polish game descriptions, ratings, genres, and scr
 4. Fuzzy title matching with configurable threshold (default 65%)
 
 **Hooks implemented:** `MetadataProviderSpec`
-- `metadata_provider_name()` / `metadata_provider_id()` — identity
-- `metadata_search_game(query)` — search PPE.pl, return `[{provider_id, provider_game_id, name, snippet}]`
-- `metadata_get_game(provider_game_id)` — scrape full metadata: title, description, rating (0-100), genre, release_date, developer, screenshots, source_url
-- `metadata_get_cover_url(provider_game_id)` — cover image URL
+- `metadata_provider_name()` / `metadata_provider_id()` - identity
+- `metadata_search_game(query)` - search PPE.pl, return `[{provider_id, provider_game_id, name, snippet}]`
+- `metadata_get_game(provider_game_id)` - scrape full metadata: title, description, rating (0-100), genre, release_date, developer, screenshots, source_url
+- `metadata_get_cover_url(provider_game_id)` - cover image URL
 
 **Config:** search engine (bing/duckduckgo), minimum match score
 
@@ -116,7 +116,7 @@ A metadata scraper that finds Polish game descriptions, ratings, genres, and scr
 ```
 ppe-metadata/
   plugin.json        # manifest, type: metadata
-  plugin.py          # 450 lines — search + scrape + fuzzy match
+  plugin.py          # 450 lines - search + scrape + fuzzy match
   logo.png           # plugin icon
   requirements.txt   # beautifulsoup4, httpx
 ```
@@ -137,7 +137,7 @@ Translates game descriptions between 26 languages using Google Translate (via tr
 5. Results joined back together
 
 **Hooks implemented:** `LifecycleSpec`
-- `lifecycle_on_startup()` — registers the translate endpoint
+- `lifecycle_on_startup()` - registers the translate endpoint
 
 **Key patterns:**
 - Async-safe threading: uses `asyncio.to_thread()` to avoid blocking the event loop
@@ -152,7 +152,7 @@ Translates game descriptions between 26 languages using Google Translate (via tr
 ```
 gd3-translator/
   plugin.json        # manifest, type: lifecycle
-  plugin.py          # 140 lines — translate endpoint + chunking
+  plugin.py          # 140 lines - translate endpoint + chunking
   logo.png           # plugin icon
   requirements.txt   # translate-shell
 ```
@@ -163,7 +163,7 @@ gd3-translator/
 
 **Source:** `examples/neon-horizon/`
 
-A complete cyberpunk theme with custom Vue layouts, Colorful Pop couch mode, 8 color skins, and gamepad support. This is the most complex plugin type — study it to understand the full capabilities.
+A complete cyberpunk theme with custom Vue layouts, Colorful Pop couch mode, 8 color skins, and gamepad support. This is the most complex plugin type - study it to understand the full capabilities.
 
 ### Theme Plugin Architecture
 
@@ -179,7 +179,7 @@ class Plugin:
         return {
             \"id\": \"neon-horizon\",
             \"name\": \"NEON HORIZON\",
-            \"layout\": \"neon-horizon\",          # must match registerPluginLayout() id
+            \"layout\": \"neon-horizon\",
             \"skins\": [
                 {\"id\": \"nh-cyber\", \"name\": \"Cyan Flux\", \"preview\": \"#00d4ff\"},
                 {\"id\": \"nh-violet\", \"name\": \"Violet Surge\", \"preview\": \"#8b5cf6\"},
@@ -190,7 +190,7 @@ class Plugin:
             \"settings\": [
                 {
                     \"key\": \"particleCount\",
-                    \"label\": \"nh.setting_particles\",    # i18n key (translated in Settings UI)
+                    \"label\": \"nh.setting_particles\",
                     \"hint\": \"nh.setting_particles_hint\",
                     \"type\": \"select\",
                     \"default\": \"6\",
@@ -221,25 +221,25 @@ Theme plugins with `.vue` files are compiled on container startup by Vite:
 
 **After installing/updating a theme plugin, restart the container** (Plugin Store has a \"Restart Now\" button).
 
-### Vue Files — Important Rules
+### Vue Files - Important Rules
 
 Plugin `.vue` files are compiled **outside the main app bundle**. You cannot use `@/` imports. Instead use `window.__GD__`:
 
 ```typescript
-// Vue runtime — import normally
+// Vue runtime - import normally
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
-// GD runtime — access via window.__GD__
+// GD runtime - access via window.__GD__
 const _gd = (window as any).__GD__
 const client = _gd.api                        // Axios with Bearer token
-const auth = _gd.stores.auth()                 // { user } — token hidden
+const auth = _gd.stores.auth()                 // { user } - token hidden
 const themeStore = _gd.stores.theme()          // full theme store
 const t = _gd.i18n?.t || ((k: string) => k)   // i18n translation
 
 // Couch Mode composables
 const { useCouchNav, couchNavPaused } = _gd.composables
-const getEjsCore = _gd.getEjsCore             // platform → EmulatorJS core
+const getEjsCore = _gd.getEjsCore             // platform -> EmulatorJS core
 
 // Register your layout + couch components
 _gd.registerPluginLayout('my-theme', LayoutComponent)
@@ -247,9 +247,9 @@ _gd.registerPluginCouchMode('my-theme', CouchComponent)
 ```
 
 **Global components** available in templates:
-- `<DownloadManager />` — Download queue tray (admin only)
-- `<RandomGamePicker />` — Random game dice button
-- `<AmbientBackground />` — Animated orb background
+- `<DownloadManager />` - Download queue tray (admin only)
+- `<RandomGamePicker />` - Random game dice button
+- `<AmbientBackground />` - Animated orb background
 
 ### Plugin Assets
 
@@ -268,7 +268,7 @@ function pluginAsset(path: string): string {
 
 ### Theme Settings
 
-Settings in `frontend_get_theme()` → `settings[]` are:
+Settings in `frontend_get_theme()` -> `settings[]` are:
 - Rendered in Settings > Appearance > Theme Settings
 - Applied as CSS custom properties on `:root`
 - Setting types: `range` (slider), `select` (chips), `toggle` (on/off)
@@ -279,7 +279,7 @@ Settings in `frontend_get_theme()` → `settings[]` are:
 Use the main app's i18n system:
 ```typescript
 const t = _gd.i18n?.t || ((k: string) => k)
-// t('nh.my_key') → translated string, falls back to key
+// t('nh.my_key') -> translated string, falls back to key
 ```
 
 Add your keys to the main app's `frontend/src/i18n/en.json` and `pl.json` with a plugin prefix (e.g. `nh.*`).
@@ -294,7 +294,7 @@ neon-horizon/
   NeonHorizonCouch.vue     # Couch Mode (Colorful Pop style, 1000+ lines)
   neon-horizon.css         # CSS overrides for existing GD components
   neon-horizon.js          # Dynamic effects (gradient text, glass blur observer)
-  plugin.py                # Theme definition — skins, settings, CSS/JS hooks
+  plugin.py                # Theme definition - skins, settings, CSS/JS hooks
   plugin.json              # Manifest
   logo.svg                 # Plugin icon
   assets/
@@ -327,7 +327,7 @@ To distribute your plugin:
 
 1. ZIP your plugin folder: `cd my-plugin && zip -r ../my-plugin-v1.0.0.zip .`
 2. Users install via Settings > Plugins (drag & drop ZIP)
-3. Or publish to a Plugin Store — see [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for the store.json format
+3. Or publish to a Plugin Store - see [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for the store.json format
 
 ---
 
@@ -335,11 +335,11 @@ To distribute your plugin:
 
 NEON HORIZON Couch Mode is inspired by and uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
 
-- **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** — Platform artwork, SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
-- **[Elementerial](https://github.com/RobZombie9043/elementerial-es-de)** — Additional design inspiration
+- **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** - Platform artwork, SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
+- **[Elementerial](https://github.com/RobZombie9043/elementerial-es-de)** - Additional design inspiration
 
 These EmulationStation themes are licensed under **Creative Commons CC-BY-NC-SA**. The assets are included for non-commercial, personal use. All credit for original artwork goes to RobZombie9043.
 
 ## License
 
-MIT (plugin template code). Theme assets may have separate licenses — see credits above.
+MIT (plugin template code). Theme assets may have separate licenses - see credits above.
