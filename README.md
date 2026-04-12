@@ -241,6 +241,10 @@ const t = _gd.i18n?.t || ((k: string) => k)   // i18n translation
 const { useCouchNav, couchNavPaused } = _gd.composables
 const getEjsCore = _gd.getEjsCore             // platform -> EmulatorJS core
 
+// Notifications - push badges to user avatar
+_gd.notifications.add({ id: 'my-alert', count: 1, label: 'Something happened', action: '/settings' })
+_gd.notifications.dismiss('my-alert')
+
 // Register your layout + couch components
 _gd.registerPluginLayout('my-theme', LayoutComponent)
 _gd.registerPluginCouchMode('my-theme', CouchComponent)

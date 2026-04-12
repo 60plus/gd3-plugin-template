@@ -156,6 +156,22 @@ window.__GD__ = {
 
     // EmulatorJS core mapping
     getEjsCore(platformFsSlug),   // returns core name or null
+
+    // i18n - translation system
+    i18n: {
+        t(key, params?),          // translate key, fallback to key string
+        locale,                   // readonly ref<string> current locale
+        setLocale(code),          // change locale
+        merge(translations),      // merge plugin translations { "en": {...}, "pl": {...} }
+    },
+
+    // Notification system - badge on user avatar
+    notifications: {
+        add({ id, count, label, details?, action?, actionLabel? }),  // add/update notification
+        dismiss(id),              // hide until session restart
+        remove(id),               // remove permanently
+        store,                    // reactive Pinia store (items, active, totalCount, hasBadge)
+    },
 }
 ```
 
