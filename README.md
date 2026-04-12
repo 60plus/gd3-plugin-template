@@ -133,29 +133,33 @@ ppe-metadata/
 Translates game descriptions between 26 languages using Google Translate (via translate-shell).
 
 **How it works:**
-1. Backend exposes `/api/plugins/translate` endpoint
-2. Frontend adds a translate button on game detail pages
-3. Text is split into ~450-char chunks at paragraph boundaries
-4. Each chunk translated via `translate-shell` package
-5. Results joined back together
+1. GD backend has a built-in `/api/plugins/translate` endpoint that calls `translate_text()` from this plugin
+2. Frontend shows a translate button on game detail pages
+3. Plugin splits long text into ~450-char chunks at `\n` paragraph boundaries
+4. Each chunk is translated via `translate-shell` package in a separate thread
+5. Results are joined back together and returned
 
 **Hooks implemented:** `LifecycleSpec`
-- `lifecycle_on_startup()` - registers the translate endpoint
+- `lifecycle_on_startup()` - logs that the plugin is loaded (the translate endpoint is provided by GD's plugins_router, not registered by the plugin itself)
 
 **Key patterns:**
-- Async-safe threading: uses `asyncio.to_thread()` to avoid blocking the event loop
-- Text chunking: splits at `\n\n` boundaries, respects max chunk size
+- Thread-safe translation: uses `concurrent.futures.ThreadPoolExecutor` because `translate-shell` internally calls `asyncio.run()` which conflicts with FastAPI's event loop
+- Text chunking: splits at `\n` boundaries, max ~450 chars per chunk
 - Language detection: `from_lang: "auto"` uses Google's auto-detect
+- Return format: `{"ok": bool, "text": str, "from_lang": str, "to_lang": str, "error": str}`
 
-**Config:** source language (auto/en/pl/de/...), target language
+**Config (Settings > Plugins > Translator):**
+- `from_lang` - source language (select, 26 options including "auto")
+- `to_lang` - target language (select, 26 options)
+- Uses `config_schema` with `select` type - rendered as dropdown in plugin settings
 
 **Dependencies:** `translate-shell>=0.0.59`
 
 **Files:**
 ```
 gd3-translator/
-  plugin.json        # manifest, type: lifecycle
-  plugin.py          # 140 lines - translate endpoint + chunking
+  plugin.json        # manifest, type: lifecycle, config_schema with select fields
+  plugin.py          # 140 lines - translate function + chunking logic
   logo.png           # plugin icon
   requirements.txt   # translate-shell
 ```

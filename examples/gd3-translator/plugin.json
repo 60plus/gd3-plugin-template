@@ -1,7 +1,7 @@
 {
   "id": "gd3-translator",
   "name": "Description Translator",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "author": "60plus",
   "description": "Translates game descriptions between languages using Google Translate. Adds a translate button to game detail pages. Splits long texts into chunks (450 char limit) and joins them back together.",
   "type": "lifecycle",
