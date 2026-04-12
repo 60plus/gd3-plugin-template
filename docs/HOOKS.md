@@ -30,10 +30,10 @@ Returned by `frontend_get_theme()`:
 
 ```python
 {
-    "id": "my-theme",                    # unique, matches registerPluginLayout() call
+    "id": "my-theme",                    # unique, matches compiled layout ID
     "name": "My Theme",                  # display name in Settings > Appearance
     "description": "Short description",
-    "layout": "my-theme",                # layout ID - must match plugin's registerPluginLayout()
+    "layout": "my-theme",                # layout ID - maps to MyThemeLayout.vue / MyThemeCouch.vue
     "skins": [                           # color palettes user can choose
         {"id": "blue",  "name": "Ocean",  "preview": "#2563eb"},
         {"id": "red",   "name": "Crimson","preview": "#dc2626"},
@@ -42,17 +42,17 @@ Returned by `frontend_get_theme()`:
     ],
     "defaultSkin": "blue",
     "cssFile": "my-theme",               # base name of CSS file (loaded by theme store)
-    "font": "https://fonts.googleapis.com/css2?family=MyFont&display=swap",  # optional
+    "font": "https://fonts.googleapis.com/css2?family=MyFont&display=swap",  # optional Google Fonts URL
     "previewHtml": "<div style='...'>...</div>",  # optional: custom preview card in theme switcher
     "settings": [                        # optional: per-theme settings in Settings > Appearance
         {
             "key": "glassBlur",
-            "label": "Glass Blur",
+            "label": "Glass Blur",       # can be an i18n key (e.g. "nh.setting_blur")
             "hint": "Backdrop blur strength",
             "type": "range",             # range | toggle | select
             "default": 20,
             "min": 0, "max": 60, "step": 1,
-            "unit": "px",                # appended to value when setting CSS var
+            "unit": "px",                # appended to value when setting CSS var (see below)
             "cssVar": "--my-glass-blur",  # set on :root by theme store
         },
         {
@@ -61,7 +61,7 @@ Returned by `frontend_get_theme()`:
             "type": "select",
             "default": "6",
             "options": ["0", "3", "6", "12"],
-            "optionLabels": ["None", "Few", "Normal", "Many"],
+            "optionLabels": ["None", "Few", "Normal", "Many"],  # can be i18n keys (see below)
             "cssVar": "--my-particle-count",
         },
         {
@@ -74,6 +74,44 @@ Returned by `frontend_get_theme()`:
     ],
 }
 ```
+
+#### font field
+
+The `font` field is optional. When provided, it should be a Google Fonts CSS URL. The app loads it as a `<link>` tag in `<head>`, making the font family available for use in your CSS:
+
+```css
+[data-theme="my-theme"] {
+  font-family: 'MyFont', sans-serif;
+}
+```
+
+#### CSS variable unit field
+
+Range settings support an optional `"unit"` string (e.g. `"px"`, `"deg"`, `"%"`, `"em"`). When the theme store sets the CSS variable on `:root`, it appends the unit to the numeric value:
+
+| Value | Unit | CSS Variable Result |
+|-------|------|---------------------|
+| `30` | `"px"` | `--my-glass-blur: 30px` |
+| `45` | `"deg"` | `--my-angle: 45deg` |
+| `80` | `"%"` | `--my-opacity: 80%` |
+| `1.5` | `"em"` | `--my-spacing: 1.5em` |
+| `6` | (none) | `--my-count: 6` |
+
+If `unit` is omitted, the raw numeric value is used.
+
+#### optionLabels with i18n
+
+The `optionLabels` array can contain either plain text strings or i18n keys. When an option label matches an i18n key, the Settings UI translates it automatically:
+
+```python
+# Plain text (not translated)
+"optionLabels": ["None", "Few", "Normal", "Many"],
+
+# i18n keys (translated via plugin's i18n.json)
+"optionLabels": ["nh.opt_none", "nh.opt_few", "nh.opt_normal", "nh.opt_many"],
+```
+
+The same applies to `label` and `hint` fields - they can be i18n keys from your plugin's `i18n.json`.
 
 ### Skin definition
 
@@ -88,13 +126,55 @@ Returned by `frontend_get_theme()`:
 
 Skins are rendered as colored circles in Settings > Appearance. The selected skin sets `data-skin` attribute on `<html>`, and your CSS uses `[data-skin="blue"]` to apply colors.
 
+### data-theme and data-skin attributes
+
+When a theme is activated, the app sets two attributes on the `<html>` element:
+
+- `data-theme` - set to the theme's `id` (e.g. `data-theme="neon-horizon"`)
+- `data-skin` - set to the selected skin's `id` (e.g. `data-skin="nh-cyber"`)
+
+These attributes allow you to scope CSS to your theme so styles don't leak into other themes:
+
+```css
+/* Only applies when your theme is active */
+[data-theme="my-theme"] {
+  --bg-primary: #0a0a1a;
+  --text-color: #e2e8f0;
+}
+
+/* Skin-specific overrides */
+[data-theme="my-theme"][data-skin="sunset"] {
+  --pl: #f97316;
+}
+
+/* Skin-only selector also works */
+[data-skin="nh-cyber"] {
+  --pl: #00d4ff;
+}
+```
+
 ### Theme settings - CSS variable flow
 
 1. Plugin defines `settings` with `cssVar` in `frontend_get_theme()`
 2. User changes setting in Settings > Appearance > Theme Settings
-3. Theme store calls `applyToDOM()` → sets CSS variable on `:root` inline style
+3. Theme store calls `applyToDOM()` - sets CSS variable on `:root` inline style
 4. Theme store dispatches `CustomEvent('gd-theme-updated')` on `<html>`
 5. Plugin JS/Vue reads the CSS variable and applies effects
+
+### gd-theme-updated event
+
+The `gd-theme-updated` custom event is dispatched on the `<html>` element whenever any theme setting changes (slider moved, toggle flipped, skin switched, etc.). Plugins can listen to this event to react to setting changes in JavaScript:
+
+```javascript
+document.documentElement.addEventListener('gd-theme-updated', () => {
+  // Re-read CSS variables and update your effects
+  const blur = getComputedStyle(document.documentElement)
+    .getPropertyValue('--my-glass-blur').trim();
+  applyBlurEffect(blur);
+});
+```
+
+This is the recommended approach for compiled Vue plugins, since Pinia store reactivity may not work across the plugin boundary.
 
 **Important for compiled Vue plugins:** Pinia store reactivity may not work across the plugin boundary. Poll CSS variables instead:
 ```javascript
@@ -112,13 +192,15 @@ Theme plugins with `.vue` files are compiled on container startup:
 
 1. `entrypoint.sh` runs `compile-theme-plugins.mjs`
 2. Script scans `/data/plugins/` for `plugin.json` with `"type": "theme"`
-3. Finds `.vue` files → `*Layout.vue` = main layout, `*Couch.vue` = couch mode
-4. Compiles via Vite into IIFE bundle → `/app/static/plugin-layouts/{id}/layout.js` + `layout.css`
-5. Frontend loads bundle from manifest → calls `registerPluginLayout()` and `registerPluginCouchMode()`
+3. Finds `.vue` files - `*Layout.vue` = main layout, `*Couch.vue` = couch mode
+4. Compiles via Vite into IIFE bundle - `/app/static/plugin-layouts/{id}/layout.js` + `layout.css`
+5. Frontend loads bundle from manifest - auto-registers layout and couch components
+
+Compiled plugins auto-register - you do not need to call `registerPluginLayout()` or `registerPluginCouchMode()` manually. The compiler generates the registration code as part of the IIFE bundle.
 
 **Externalized dependencies** (not bundled, provided by GD at runtime):
-- `vue` → `window.__GD__.Vue`
-- `vue-router` → `window.__GD__.VueRouter`
+- `vue` - `window.__GD__.Vue`
+- `vue-router` - `window.__GD__.VueRouter`
 
 ### window.__GD__ API reference
 
@@ -142,14 +224,14 @@ window.__GD__ = {
     // Authenticated Axios client (Bearer token auto-attached)
     api: AxiosInstance,
 
-    // Theme/layout registration
+    // Theme/layout registration (only needed for non-Vue JS plugins)
     registerTheme(themeDefinition),
     registerPluginLayout(layoutId, VueComponent),
     registerPluginCouchMode(themeId, VueComponent),
 
     // Couch Mode composables
     composables: {
-        useCouchNav(handlers),    // gamepad + keyboard navigation
+        useCouchNav(handlers),    // gamepad + keyboard navigation (see below)
         couchNavPaused,           // ref<boolean> - pause input during overlays
         useCouchTheme(),          // { theme, view, setTheme, setView }
     },
@@ -175,6 +257,26 @@ window.__GD__ = {
 }
 ```
 
+### useCouchNav handlers
+
+The `useCouchNav(handlers)` composable connects gamepad and keyboard input to your couch mode UI. The `handlers` parameter is an object with callback functions for each direction/action:
+
+```typescript
+const { useCouchNav, couchNavPaused } = _gd.composables
+
+useCouchNav({
+  left:    () => { /* D-pad left / Arrow Left  - navigate left */ },
+  right:   () => { /* D-pad right / Arrow Right - navigate right */ },
+  up:      () => { /* D-pad up / Arrow Up       - navigate up */ },
+  down:    () => { /* D-pad down / Arrow Down   - navigate down */ },
+  confirm: () => { /* A button / Enter          - select/confirm */ },
+  back:    () => { /* B button / Escape         - go back */ },
+  menu:    () => { /* Start button / M key      - open menu */ },
+})
+```
+
+All handlers are optional - only provide the ones you need. Input is automatically paused when `couchNavPaused.value` is `true` (e.g. during modal overlays or emulator sessions).
+
 ### Plugin asset serving
 
 Static files in `assets/` subdirectory are served via:
@@ -185,6 +287,36 @@ GET /api/plugins/{plugin-id}/assets/{file-path}
 Supported types: `.webp`, `.png`, `.jpg`, `.svg`, `.xml`, `.json`
 
 Path traversal protection: `..` and absolute paths are blocked.
+
+JSON files can be loaded via the API client for data-driven plugins:
+```typescript
+const { data } = await client.get('/api/plugins/my-plugin/assets/data.json')
+```
+
+### Plugin i18n endpoint
+
+```
+GET /api/plugins/frontend/i18n
+```
+
+Returns merged translations from all installed plugins' `i18n.json` files. The response format:
+
+```json
+{
+  "en": {
+    "nh.setting_particles": "Particle Count",
+    "nh.opt_none": "None",
+    "retro.title": "Retro Wave"
+  },
+  "pl": {
+    "nh.setting_particles": "Liczba czastek",
+    "nh.opt_none": "Brak",
+    "retro.title": "Retro Wave"
+  }
+}
+```
+
+This endpoint is called automatically on app startup. The returned translations are merged into the app's i18n system via `_gd.i18n.merge()`. Plugin developers do not need to call this endpoint manually - just provide an `i18n.json` file in your plugin root directory.
 
 ---
 

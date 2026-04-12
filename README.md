@@ -32,6 +32,7 @@ my-plugin/
   plugin.py         # Python class with @hookimpl methods (required)
   logo.png          # icon shown in Settings (optional)
   requirements.txt  # pip dependencies, installed automatically (optional)
+  i18n.json         # plugin translations (optional, theme/lifecycle plugins)
 ```
 
 ---
@@ -40,32 +41,34 @@ my-plugin/
 
 ```json
 {
-  \"id\": \"my-plugin\",
-  \"name\": \"My Plugin\",
-  \"version\": \"1.0.0\",
-  \"author\": \"Your Name\",
-  \"description\": \"What this plugin does\",
-  \"type\": \"metadata\",
-  \"entry\": \"plugin.py\",
-  \"has_logo\": true,
-  \"requires\": [\"httpx\", \"beautifulsoup4\"],
-  \"min_gd_version\": \"3.0.0\",
-  \"config_schema\": {
-    \"api_key\": {
-      \"type\": \"string\",
-      \"default\": \"\",
-      \"label\": \"API Key\"
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "What this plugin does",
+  "type": "metadata",
+  "entry": "plugin.py",
+  "has_logo": true,
+  "requires": ["httpx", "beautifulsoup4"],
+  "min_gd_version": "3.0.0",
+  "config_schema": {
+    "api_key": {
+      "type": "string",
+      "default": "",
+      "label": "API Key"
     },
-    \"enabled\": {
-      \"type\": \"boolean\",
-      \"default\": true,
-      \"label\": \"Enable\"
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "label": "Enable"
     }
   }
 }
 ```
 
 Config schema fields are rendered as a settings form in Settings > Plugins. Supported types: `string`, `number`, `boolean`, `select`.
+
+> **config_schema vs theme settings:** Theme plugins use `frontend_get_theme().settings[]` for appearance settings (blur, particles, colors) - these are rendered in Settings > Appearance > Theme Settings. The `config_schema` in plugin.json is for plugin configuration (rendered in Settings > Plugins). Theme plugins typically have empty `"config_schema": {}`.
 
 ---
 
@@ -79,11 +82,11 @@ from plugins.hookspecs import hookimpl
 class Plugin:
     @hookimpl
     def metadata_provider_name(self) -> str:
-        return \"My Source\"
+        return "My Source"
 
     @hookimpl
     def metadata_provider_id(self) -> str:
-        return \"my-source\"
+        return "my-source"
 ```
 
 See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference with all specs and return types.
@@ -141,8 +144,8 @@ Translates game descriptions between 26 languages using Google Translate (via tr
 
 **Key patterns:**
 - Async-safe threading: uses `asyncio.to_thread()` to avoid blocking the event loop
-- Text chunking: splits at `\\n\\n` boundaries, respects max chunk size
-- Language detection: `from_lang: \"auto\"` uses Google's auto-detect
+- Text chunking: splits at `\n\n` boundaries, respects max chunk size
+- Language detection: `from_lang: "auto"` uses Google's auto-detect
 
 **Config:** source language (auto/en/pl/de/...), target language
 
@@ -177,49 +180,73 @@ class Plugin:
     @hookimpl
     def frontend_get_theme(self):
         return {
-            \"id\": \"neon-horizon\",
-            \"name\": \"NEON HORIZON\",
-            \"layout\": \"neon-horizon\",
-            \"skins\": [
-                {\"id\": \"nh-cyber\", \"name\": \"Cyan Flux\", \"preview\": \"#00d4ff\"},
-                {\"id\": \"nh-violet\", \"name\": \"Violet Surge\", \"preview\": \"#8b5cf6\"},
+            "id": "neon-horizon",
+            "name": "NEON HORIZON",
+            "layout": "neon-horizon",
+            "skins": [
+                {"id": "nh-cyber", "name": "Cyan Flux", "preview": "#00d4ff"},
+                {"id": "nh-violet", "name": "Violet Surge", "preview": "#8b5cf6"},
             ],
-            \"defaultSkin\": \"nh-cyber\",
-            \"cssFile\": \"neon-horizon\",
-            \"font\": \"https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap\",
-            \"settings\": [
+            "defaultSkin": "nh-cyber",
+            "cssFile": "neon-horizon",
+            # Google Fonts URL - loaded as a <link> in <head>, makes the font
+            # available for use in your CSS (e.g. font-family: 'Orbitron')
+            "font": "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap",
+            "settings": [
                 {
-                    \"key\": \"particleCount\",
-                    \"label\": \"nh.setting_particles\",
-                    \"hint\": \"nh.setting_particles_hint\",
-                    \"type\": \"select\",
-                    \"default\": \"6\",
-                    \"options\": [\"0\", \"3\", \"6\", \"12\"],
-                    \"optionLabels\": [\"nh.opt_none\", \"nh.opt_few\", \"nh.opt_normal\", \"nh.opt_many\"],
-                    \"cssVar\": \"--nh-particle-count\",
+                    "key": "particleCount",
+                    "label": "nh.setting_particles",
+                    "hint": "nh.setting_particles_hint",
+                    "type": "select",
+                    "default": "6",
+                    "options": ["0", "3", "6", "12"],
+                    # optionLabels can be i18n keys - the Settings UI translates them
+                    "optionLabels": ["nh.opt_none", "nh.opt_few", "nh.opt_normal", "nh.opt_many"],
+                    "cssVar": "--nh-particle-count",
                 },
             ],
         }
 
     @hookimpl
     def frontend_get_css(self):
-        return Path(__file__).parent.joinpath(\"neon-horizon.css\").read_text(encoding=\"utf-8\")
+        return Path(__file__).parent.joinpath("neon-horizon.css").read_text(encoding="utf-8")
 
     @hookimpl
     def frontend_get_js(self):
-        return Path(__file__).parent.joinpath(\"neon-horizon.js\").read_text(encoding=\"utf-8\")
+        return Path(__file__).parent.joinpath("neon-horizon.js").read_text(encoding="utf-8")
 ```
 
 ### Vue SFC Compilation
 
 Theme plugins with `.vue` files are compiled on container startup by Vite:
 
-1. Plugin has `.vue` files + `plugin.json` with `\"type\": \"theme\"`
+1. Plugin has `.vue` files + `plugin.json` with `"type": "theme"`
 2. Container entrypoint runs `compile-theme-plugins.mjs`
 3. Vite compiles to IIFE bundle: `layout.js` + `layout.css`
 4. Frontend loads and registers components via `window.__GD__`
 
-**After installing/updating a theme plugin, restart the container** (Plugin Store has a \"Restart Now\" button).
+**After installing/updating a theme plugin, restart the container** (Plugin Store has a "Restart Now" button).
+
+### Component Naming Convention
+
+Vue file names must follow a specific naming convention based on the layout ID in your theme definition:
+
+- Layout ID `"my-theme"` maps to `MyThemeLayout.vue` (main layout shell)
+- Layout ID `"my-theme"` maps to `MyThemeCouch.vue` (couch mode component)
+
+The conversion is kebab-case to PascalCase plus the suffix (`Layout` or `Couch`). Examples:
+
+| Layout ID | Layout File | Couch File |
+|-----------|-------------|------------|
+| `neon-horizon` | `NeonHorizonLayout.vue` | `NeonHorizonCouch.vue` |
+| `retro-wave` | `RetroWaveLayout.vue` | `RetroWaveCouch.vue` |
+| `minimal` | `MinimalLayout.vue` | `MinimalCouch.vue` |
+
+The compiler scans for `*Layout.vue` and `*Couch.vue` files automatically. You do not need to register them manually.
+
+### Auto-Registration
+
+Compiled Vue plugins auto-register their layout and couch components - you do not need to call `registerPluginLayout()` or `registerPluginCouchMode()` manually. The Vite compiler handles this during the build step. Only raw JS plugins (non-Vue) need manual registration.
 
 ### Vue Files - Important Rules
 
@@ -244,10 +271,6 @@ const getEjsCore = _gd.getEjsCore             // platform -> EmulatorJS core
 // Notifications - push badges to user avatar
 _gd.notifications.add({ id: 'my-alert', count: 1, label: 'Something happened', action: '/settings' })
 _gd.notifications.dismiss('my-alert')
-
-// Register your layout + couch components
-_gd.registerPluginLayout('my-theme', LayoutComponent)
-_gd.registerPluginCouchMode('my-theme', CouchComponent)
 ```
 
 **Global components** available in templates:
@@ -270,23 +293,133 @@ function pluginAsset(path: string): string {
 }
 ```
 
+You can also load JSON data from assets via the API client:
+```typescript
+const { data } = await client.get('/api/plugins/neon-horizon/assets/platforms.json')
+// data is the parsed JSON object
+```
+
+### data-theme and data-skin CSS Selectors
+
+When a theme is active, GD sets `data-theme` and `data-skin` attributes on the `<html>` element. Use these to scope your CSS:
+
+```css
+/* Target your theme specifically */
+[data-theme="my-theme"] {
+  --my-bg: #0a0a1a;
+  --my-accent: #00d4ff;
+}
+
+/* Target a specific skin within your theme */
+[data-theme="my-theme"][data-skin="sunset"] {
+  --my-accent: #f97316;
+}
+
+/* Skin-only selector (also works) */
+[data-skin="nh-cyber"] {
+  --pl: #00d4ff;
+  --pl-light: #67e8f9;
+}
+```
+
+This ensures your styles only apply when your theme/skin is active and don't leak into other themes.
+
 ### Theme Settings
 
 Settings in `frontend_get_theme()` -> `settings[]` are:
 - Rendered in Settings > Appearance > Theme Settings
 - Applied as CSS custom properties on `:root`
 - Setting types: `range` (slider), `select` (chips), `toggle` (on/off)
-- Labels support i18n keys: use `\"label\": \"nh.my_setting\"` and add the key to the app's i18n files
+- Labels and hints support i18n keys: use `"label": "nh.my_setting"` and define the key in your plugin's `i18n.json`
+- For `range` type: the `"unit"` field (e.g. `"px"`, `"deg"`) is appended to the value when setting the CSS variable. So value `30` with unit `"px"` produces `--my-var: 30px`
+- For `select` type: `"optionLabels"` can be i18n keys (e.g. `["nh.opt_none", "nh.opt_few"]`) - the Settings UI translates them automatically
+
+### frontend_get_js() Patterns
+
+The `frontend_get_js()` hook returns a JavaScript string injected into `<head>`. Since it runs in the global scope, wrap your code in an IIFE to avoid polluting the global namespace:
+
+```javascript
+(function() {
+  'use strict';
+
+  // Helper to read CSS variables set by theme settings
+  function getCssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // React to theme setting changes (slider moved, toggle flipped, etc.)
+  document.documentElement.addEventListener('gd-theme-updated', () => {
+    const blur = getCssVar('--my-glass-blur');
+    const particles = getCssVar('--my-particle-count');
+    // Update your JS effects based on new values
+  });
+
+  // Use MutationObserver to react to DOM changes (SPA route changes, new elements)
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType === 1) {
+          // Process newly added elements
+        }
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Poll CSS variables for initial values (useful on page load)
+  const count = parseInt(getCssVar('--my-particle-count') || '6', 10);
+})();
+```
 
 ### i18n in Plugins
 
-Use the main app's i18n system:
-```typescript
-const t = _gd.i18n?.t || ((k: string) => k)
-// t('nh.my_key') -> translated string, falls back to key
+Plugins provide their own translations via an `i18n.json` file in the plugin root. This file is auto-loaded by the app at startup via `GET /api/plugins/frontend/i18n`, which merges translations from all installed plugins.
+
+**i18n.json format:**
+
+```json
+{
+  "en": {
+    "nh.setting_particles": "Particle Count",
+    "nh.setting_particles_hint": "Number of floating particles",
+    "nh.opt_none": "None",
+    "nh.opt_few": "Few",
+    "nh.opt_normal": "Normal",
+    "nh.opt_many": "Many",
+    "nh.home_title": "Welcome",
+    "nh.library_empty": "No games found"
+  },
+  "pl": {
+    "nh.setting_particles": "Liczba czastek",
+    "nh.setting_particles_hint": "Ilosc unoszczych sie czastek",
+    "nh.opt_none": "Brak",
+    "nh.opt_few": "Malo",
+    "nh.opt_normal": "Normalnie",
+    "nh.opt_many": "Duzo",
+    "nh.home_title": "Witaj",
+    "nh.library_empty": "Nie znaleziono gier"
+  }
+}
 ```
 
-Add your keys to the main app's `frontend/src/i18n/en.json` and `pl.json` with a plugin prefix (e.g. `nh.*`).
+Use a unique prefix for all your keys (e.g. `nh.*`, `retro.*`) to avoid collisions with other plugins.
+
+**Using translations in Vue components:**
+```typescript
+const t = _gd.i18n?.t || ((k: string) => k)
+// t('nh.home_title') -> "Welcome" (en) or "Witaj" (pl)
+```
+
+**Using translations in theme settings:**
+
+Setting `label`, `hint`, and `optionLabels` fields can reference i18n keys directly. The Settings UI translates them automatically:
+```python
+"settings": [{
+    "label": "nh.setting_particles",       # translated by Settings UI
+    "hint": "nh.setting_particles_hint",   # translated by Settings UI
+    "optionLabels": ["nh.opt_none", "nh.opt_few"],  # each label translated
+}]
+```
 
 **NEON HORIZON Files:**
 ```
@@ -300,6 +433,7 @@ neon-horizon/
   neon-horizon.js          # Dynamic effects (gradient text, glass blur observer)
   plugin.py                # Theme definition - skins, settings, CSS/JS hooks
   plugin.json              # Manifest
+  i18n.json                # Plugin translations (en + pl)
   logo.svg                 # Plugin icon
   assets/
     pop/                   # Pop character artwork per platform (95 platforms)
