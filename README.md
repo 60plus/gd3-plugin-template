@@ -172,6 +172,17 @@ gd3-translator/
 
 A complete cyberpunk theme with custom Vue layouts, Colorful Pop couch mode, 8 color skins, and gamepad support. This is the most complex plugin type - study it to understand the full capabilities.
 
+**Key features (v1.2.5):**
+- Netflix-style home page with hero banner and recently added rows
+- Steam Big Picture library views (16:9 landscape cards)
+- Colorful Pop couch mode with platform carousel, video playback in TV cutouts, favorites and recently played
+- Per-game platform color in favorites/recent (reads platform color from platforms.json)
+- Locale-aware platform descriptions (reads UI language from localStorage, falls back to English)
+- Notification badge support (polls `__GD__.notifications.store` for update badges on avatar)
+- Full i18n via i18n.json (58 keys EN+PL)
+- 8 color skins (4 solid + 4 dual-gradient)
+- Configurable settings: particle count, glass blur, glass opacity, scanline overlay
+
 ### Theme Plugin Architecture
 
 Theme plugins provide three hook implementations:
