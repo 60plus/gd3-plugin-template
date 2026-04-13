@@ -1,8 +1,8 @@
 # GD3 Plugin Development Guide
 
-Templates, examples, and documentation for building plugins for [GamesDownloader V3](https://gitea.domowy.tech/60plus/GamesDownloader).
+Templates, examples, and documentation for building plugins for [GamesDownloader V3](https://github.com/60plus/GamesDownloader).
 
-> **Looking to install plugins?** Go to [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for ready-to-install ZIPs, or add the store URL in Settings > Plugin Store.
+> **Looking to install plugins?** Go to [gd3-plugin-store](https://github.com/60plus/gd3-plugin-store) for ready-to-install ZIPs, or add the store URL in Settings > Plugin Store.
 
 ---
 
@@ -481,7 +481,7 @@ To distribute your plugin:
 
 1. ZIP your plugin folder: `cd my-plugin && zip -r ../my-plugin-v1.0.0.zip .`
 2. Users install via Settings > Plugins (drag & drop ZIP)
-3. Or publish to a Plugin Store - see [gd3-plugin-store](https://gitea.domowy.tech/60plus/gd3-plugin-store) for the store.json format
+3. Or publish to a Plugin Store - see [gd3-plugin-store](https://github.com/60plus/gd3-plugin-store) for the store.json format
 
 ---
 
