@@ -36,6 +36,10 @@
         <router-link v-if="isAdmin" to="/library" class="nh-tab" :class="{ active: isRouteActive('/library') }">{{ t('nav.gog_library') }}</router-link>
         <router-link to="/games" class="nh-tab" :class="{ active: isRouteActive('/games') }">{{ t('nav.games_library') }}</router-link>
         <router-link to="/emulation" class="nh-tab" :class="{ active: isRouteActive('/emulation') }">{{ t('nav.emulation') }}</router-link>
+        <router-link to="/couch" class="nh-tab nh-tab--couch">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="3"/><circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1.5" fill="currentColor" stroke="none"/><path d="M6 10h4M8 8v4M14 11h4" stroke-width="2"/></svg>
+          {{ t('couch.title') }}
+        </router-link>
       </div>
 
       <div class="nh-nav-center">
@@ -393,6 +397,19 @@ const vClickOutside = {
   color: var(--pl);
   border-bottom-color: var(--pl);
   text-shadow: 0 0 12px var(--pglow, rgba(0,212,255,.4));
+}
+.nh-tab--couch {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-left: auto;
+  border-bottom: none !important;
+  background: color-mix(in srgb, var(--pl) 10%, transparent);
+  border-radius: 6px;
+  padding: 4px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--pl) 25%, transparent) !important;
+}
+.nh-tab--couch:hover {
+  background: color-mix(in srgb, var(--pl) 20%, transparent);
+  border-color: var(--pl) !important;
 }
 
 .nh-logo-img {
