@@ -1,0 +1,15 @@
+{
+  "en": {
+    "mytheme.home_title": "Home",
+    "mytheme.library_title": "Library",
+    "mytheme.no_games": "No games found",
+    "mytheme.setting_blur": "Glass Blur",
+    "mytheme.setting_blur_hint": "Backdrop blur strength for panels",
+    "mytheme.setting_particles": "Particles",
+    "mytheme.setting_particles_hint": "Number of background particles",
+    "mytheme.opt_none": "None",
+    "mytheme.opt_few": "Few",
+    "mytheme.opt_normal": "Normal",
+    "mytheme.opt_many": "Many"
+  }
+}

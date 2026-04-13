@@ -1,0 +1,6 @@
+{
+  "en": {
+    "myplugin.status_ok": "Plugin running",
+    "myplugin.status_error": "Plugin error"
+  }
+}
