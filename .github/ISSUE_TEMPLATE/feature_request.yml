@@ -1,0 +1,23 @@
+name: Feature Request
+description: Suggest a new feature for the plugin system
+title: '[Feature]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your suggestion! Please search existing issues first.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Why would this be useful? What problem does it solve?
+    validations:
+      required: false

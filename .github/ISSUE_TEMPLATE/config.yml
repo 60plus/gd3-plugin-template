@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Plugin Store
+    url: https://github.com/60plus/gd3-plugin-store
+    about: Browse and install plugins, submit your plugin to the store
+  - name: GamesDownloader
+    url: https://github.com/60plus/GamesDownloader
+    about: Main GamesDownloader application issues

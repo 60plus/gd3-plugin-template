@@ -1,0 +1,38 @@
+name: Plugin Development Help
+description: Need help building a plugin?
+title: '[Help]: '
+labels: ['question']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help with plugin development? Check the [Wiki](https://github.com/60plus/gd3-plugin-template/wiki) and [Hook Reference](https://github.com/60plus/gd3-plugin-template/blob/main/docs/HOOKS.md) first.
+  - type: dropdown
+    id: plugin-type
+    attributes:
+      label: Plugin Type
+      options:
+        - Theme
+        - Metadata Scraper
+        - Lifecycle
+        - Widget
+        - Download Provider
+        - Library Source
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do? What have you tried?
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code
+      description: Relevant code snippets (if any)
+      render: python
+    validations:
+      required: false
