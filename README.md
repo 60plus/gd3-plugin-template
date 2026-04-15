@@ -96,36 +96,20 @@ See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference with all specs an
 
 **Source:** `examples/ppe-metadata/`
 
-A metadata scraper that finds Polish game descriptions, ratings, genres, and screenshots from PPE.pl.
-
-**How it works:**
-1. `metadata_search_game(query)` searches PPE.pl via Bing/DuckDuckGo, returns matching pages
-2. `metadata_get_game(url)` scrapes the page with BeautifulSoup, extracts structured data
-3. `metadata_get_cover_url(url)` extracts the game cover image URL
-4. Fuzzy title matching with configurable threshold (default 65%)
-
-**Hooks implemented:** `MetadataProviderSpec`
-- `metadata_provider_name()` / `metadata_provider_id()` - identity
-- `metadata_search_game(query)` - search PPE.pl, return `[{provider_id, provider_game_id, name, snippet}]`
-- `metadata_get_game(provider_game_id)` - scrape full metadata: title, description, rating (0-100), genre, release_date, developer, screenshots, source_url
-- `metadata_get_cover_url(provider_game_id)` - cover image URL
-
-**Config:** search engine (bing/duckduckgo), minimum match score
-
-**Dependencies:** `beautifulsoup4`, `httpx`
-
-**Files:**
-```
-ppe-metadata/
-  plugin.json        # manifest, type: metadata
-  plugin.py          # 450 lines - search + scrape + fuzzy match
-  logo.png           # plugin icon
-  requirements.txt   # beautifulsoup4, httpx
-```
+See [docs/HOOKS.md](docs/HOOKS.md) for all examples including PPE.pl Scraper, Description Translator, and NEON HORIZON Theme with full architecture documentation.
 
 ---
 
-See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference, more examples, and theme plugin architecture.
+## Starter Templates
+
+| Template | Path | Description |
+|----------|------|-------------|
+| Metadata Scraper | `templates/metadata-scraper/` | Search + fetch game data from external source |
+| Theme | `templates/theme/` | Custom layout with CSS, JS, and settings |
+| Lifecycle | `templates/lifecycle/` | Hook into app events, register custom endpoints |
+| Widget | `templates/widget/` | Dashboard card with custom content |
+
+Each template has a `plugin.py` with TODO comments showing where to add your code.
 
 ---
 
@@ -139,6 +123,22 @@ To distribute your plugin:
 
 ---
 
+## Credits & Acknowledgments
+
+GamesDownloader V3 and its plugin system were inspired by several outstanding open-source projects:
+
+- **[RomM](https://github.com/rommapp/romm)** - ROM management platform that inspired the emulation library architecture, metadata scraping approach, and platform organization
+- **[Gameyfin](https://github.com/grimsi/gameyfin)** - Self-hosted game library manager that inspired the original concept of a personal game vault with automatic metadata fetching
+
+NEON HORIZON Couch Mode uses assets from EmulationStation themes by [RobZombie9043](https://github.com/RobZombie9043):
+
+- **[Colorful Pop](https://github.com/RobZombie9043/colorful-pop-es-de)** - Platform artwork, SVG logos, colored icons, platform metadata with 15-language descriptions, video positioning data, and system color palettes
+- **[Elementerial](https://github.com/RobZombie9043/elementerial-es-de)** - Additional design inspiration
+
+These EmulationStation themes are licensed under **Creative Commons CC-BY-NC-SA**. The assets are included for non-commercial, personal use. All credit for original artwork goes to RobZombie9043.
+
+Special thanks to the teams behind [EmulatorJS](https://emulatorjs.org/), [ScreenScraper](https://www.screenscraper.fr/), [SteamGridDB](https://www.steamgriddb.com/), and [HowLongToBeat](https://howlongtobeat.com/) for their APIs and services.
+
 ## License
 
-MIT (plugin template code). Theme assets may have separate licenses - see credits in HOOKS.md.
+MIT (plugin template code). Theme assets may have separate licenses - see credits above.
