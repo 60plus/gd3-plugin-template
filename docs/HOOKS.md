@@ -322,7 +322,7 @@ This endpoint is called automatically on app startup. The returned translations 
 
 ## MetadataProviderSpec
 
-For plugins that fetch game metadata from external sources.
+For plugins that fetch game metadata from external sources. These hooks work across all libraries - GOG, Games Library, and ROM Library.
 
 | Hook | Returns | Description |
 |------|---------|-------------|
@@ -331,6 +331,9 @@ For plugins that fetch game metadata from external sources.
 | `metadata_search_game(query)` | `list[dict]` | Search results |
 | `metadata_get_game(provider_game_id)` | `dict or None` | Full game metadata |
 | `metadata_get_cover_url(provider_game_id)` | `str or None` | Cover image URL |
+| `metadata_get_covers(query)` | `list[dict]` | Cover/box art images for a game title |
+| `metadata_get_heroes(query)` | `list[dict]` | Hero/background/fanart images |
+| `metadata_get_logos(query)` | `list[dict]` | Clear logo / wheel images |
 
 ### Search result dict
 
@@ -345,18 +348,39 @@ For plugins that fetch game metadata from external sources.
 
 ### Game metadata dict
 
+Used by `metadata_get_game()`. Fields are used in the Description and Details tabs of the Edit Metadata panel. The `rating` field (0-10 scale) is saved and displayed as a badge on game detail pages.
+
 ```python
 {
     "provider_id": "ppe",
     "provider_game_id": "https://www.ppe.pl/gry/Game/123",
     "title": "Game Title",
     "description": "Full description text",
-    "rating": 8.5,
+    "rating": 8.5,           # 0-10 scale, shown as badge on game detail
     "genre": "FPS",
     "release_date": "2024-01-15",
     "developer": "Studio Name",
+    "publisher": "Publisher Name",
+    "release_year": 2024,
+    "genres": ["FPS", "Action"],
+    "player_count": "1-4",
     "screenshots": ["https://example.com/screen1.jpg", ...],
     "source_url": "https://www.ppe.pl/gry/Game/123",
+}
+```
+
+### Image result dict
+
+Used by `metadata_get_covers()`, `metadata_get_heroes()`, and `metadata_get_logos()`. The `_source` field is used to resolve the plugin logo for source badges.
+
+```python
+{
+    "url": "https://example.com/cover.jpg",      # full-size image
+    "thumb": "https://example.com/cover_sm.jpg",  # thumbnail (can be same as url)
+    "type": "static",                              # "static" or "animated"
+    "label": "Box Art - Front",                    # display label
+    "author": "username",                          # optional credit
+    "_source": "myplugin",                         # provider ID (used for logo badge)
 }
 ```
 
