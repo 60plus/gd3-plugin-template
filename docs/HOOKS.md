@@ -228,6 +228,7 @@ window.__GD__ = {
     registerTheme(themeDefinition),
     registerPluginLayout(layoutId, VueComponent),
     registerPluginCouchMode(themeId, VueComponent),
+    registerMetadataTab(tab),     // add a tab to the game metadata editor (see below)
 
     // Couch Mode composables
     composables: {
@@ -256,6 +257,49 @@ window.__GD__ = {
     },
 }
 ```
+
+### registerMetadataTab
+
+Adds a tab to the **Edit Metadata** panel of a library game, next to the
+built-in Cover / Description / Details tabs. The tab body is mounted as plain
+DOM, so it works from a `frontend_get_js()` plugin without compiling a Vue
+component (a metadata plugin can use it too - hooks are not gated by plugin
+`type`). Available since GamesDownloader **v1.0.3** - guard the call so your
+plugin degrades gracefully on older versions (the rest of your plugin keeps
+working, only the tab is skipped).
+
+```javascript
+const gd = window.__GD__;
+if (gd && typeof gd.registerMetadataTab === 'function') {
+  gd.registerMetadataTab({
+    id: 'my-tab',            // unique tab id
+    label: 'My Source',      // tab button label
+    library: 'games',        // 'games' | 'gog' | 'all'  (default 'games')
+    mount(el, ctx) {
+      // el  - empty container element for your tab body
+      // ctx - { game, apiPrefix, close, save }
+      el.textContent = 'Editing ' + ctx.game.title;
+      // build your UI, then persist via the authenticated client:
+      //   gd.api.patch(ctx.apiPrefix + '/' + ctx.game.id, { meta_ratings: {...} })
+      //     .then(() => ctx.save());
+      return () => { /* optional cleanup, called when the tab is left */ };
+    },
+  });
+}
+```
+
+`mount(el, ctx)` receives a context object:
+
+| Field | Description |
+|-------|-------------|
+| `game` | The game record being edited (`id`, `title`, `meta_ratings`, ...) |
+| `apiPrefix` | API base for this panel, e.g. `/library/games` or `/gog/library/games` |
+| `close()` | Close the metadata panel |
+| `save(data?)` | Notify the host that data changed so the detail view re-fetches |
+
+Tabs are filtered by `library`, so a `games`-only tab does not appear in the GOG
+panel. Return an optional cleanup function from `mount` to tear down listeners
+when the user switches away from the tab.
 
 ### useCouchNav handlers
 
