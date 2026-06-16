@@ -296,10 +296,37 @@ if (gd && typeof gd.registerMetadataTab === 'function') {
 | `apiPrefix` | API base for this panel, e.g. `/library/games` or `/gog/library/games` |
 | `close()` | Close the metadata panel |
 | `save(data?)` | Notify the host that data changed so the detail view re-fetches |
+| `markDirty()` | (v1.0.4+) Flag the tab as having unsaved edits, enabling the panel's own **Save** button |
+| `onSave(handler)` | (v1.0.4+) Register a handler the panel awaits when **Save** is clicked; see below |
 
 Tabs are filtered by `library`, so a `games`-only tab does not appear in the GOG
 panel. Return an optional cleanup function from `mount` to tear down listeners
 when the user switches away from the tab.
+
+#### Saving through the panel's own Save button (v1.0.4+)
+
+Instead of persisting immediately, a tab can let the user save its edits with the
+panel's existing **Save** button (one request, no separate button). Hold your
+edits in a working copy, call `ctx.markDirty()` whenever they change (this enables
+the Save button), and register a handler with `ctx.onSave()`. The handler returns
+a partial PATCH payload that the panel folds into its single save request:
+`meta_ratings` is shallow merged (a `null` value deletes that key), other fields
+are assigned.
+
+```javascript
+mount(el, ctx) {
+  let tier = ctx.game.meta_ratings?.protondb || null;
+  // ... build UI; on every change: tier = ...; ctx.markDirty && ctx.markDirty();
+
+  ctx.onSave && ctx.onSave(() => ({
+    meta_ratings: { protondb: tier || null }   // null -> key removed
+  }));
+}
+```
+
+Both `markDirty` and `onSave` are optional - guard them (`ctx.onSave && ...`) so the
+tab still works on cores before v1.0.4, e.g. by falling back to your own button that
+calls `gd.api.patch(ctx.apiPrefix + '/' + ctx.game.id, { ... }).then(() => ctx.save())`.
 
 ### useCouchNav handlers
 
