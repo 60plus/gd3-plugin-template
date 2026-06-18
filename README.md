@@ -276,6 +276,7 @@ const _gd = (window as any).__GD__
 const client = _gd.api                        // Axios with Bearer token
 const auth = _gd.stores.auth()                 // { user } - token hidden
 const themeStore = _gd.stores.theme()          // full theme store
+const libs = _gd.stores.libraries()            // library registry - data-driven nav/home (see docs/HOOKS.md)
 const t = _gd.i18n?.t || ((k: string) => k)   // i18n translation
 
 // Couch Mode composables

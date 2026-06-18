@@ -216,9 +216,10 @@ window.__GD__ = {
 
     // Pinia stores (factory functions - call to get instance)
     stores: {
-        auth(),     // returns { user, logout() } - token BLOCKED for security
-        socket(),   // returns { syncProgress } - raw socket BLOCKED
-        theme(),    // returns full theme store (themeId, skinId, settings, applyToDOM, ...)
+        auth(),       // returns { user, logout() } - token BLOCKED for security
+        socket(),     // returns { syncProgress } - raw socket BLOCKED
+        theme(),      // returns full theme store (themeId, skinId, settings, applyToDOM, ...)
+        libraries(),  // library registry store - see "Library Registry API" below (v1.0.11)
     },
 
     // Authenticated Axios client (Bearer token auto-attached)
@@ -229,6 +230,20 @@ window.__GD__ = {
     registerPluginLayout(layoutId, VueComponent),
     registerPluginCouchMode(themeId, VueComponent),
     registerMetadataTab(tab),     // add a tab to the game metadata editor (see below)
+    registerDetailRow(row),       // add a theme-native row to the game detail card (v1.0.10)
+
+    // Library registry helpers (v1.0.11) - see "Library Registry API" below
+    recentLibraries: {
+        get(),            // resolved slugs to show a recently-added row for (visible, non-couch)
+        getRaw(),         // raw per-theme selection (null = all)
+        isEnabled(slug),  // should this library show a recently-added row?
+        set(slugs),       // persist the per-theme selection
+    },
+    icons: {
+        library(name),    // inner SVG markup for a built-in library icon (tint with currentColor)
+        libraryNames(),   // list of built-in icon names
+        libraryAll(),     // { name: svgMarkup } map
+    },
 
     // Couch Mode composables
     composables: {
@@ -257,6 +272,91 @@ window.__GD__ = {
     },
 }
 ```
+
+### Library Registry API (`stores.libraries`) - v1.0.11
+
+Libraries (GOG, Games, Emulation, Couch, and admin-created custom libraries) are
+data-driven from a registry. A theme should render its navigation, home rows and
+library views from this store instead of hard-coding GOG / Games / Emulation - so
+that custom libraries, per-user visibility, ordering and access control all work
+automatically, with no further changes to GamesDownloader.
+
+```javascript
+const libs = window.__GD__.stores.libraries();
+```
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `visible` | `LibraryInfo[]` | Libraries this user should see - already filtered (enabled, not hidden, RBAC + per-user access) and sorted in the user's effective order. **Iterate this for nav / home.** |
+| `enabled` | `LibraryInfo[]` | Like `visible`, but ignores the per-user hide (the admin-enabled set). |
+| `bySlug(slug)` | `LibraryInfo \| undefined` | Look up one library. |
+| `has(slug)` | `boolean` | Library exists, is enabled and visible to this user. |
+| `isHidden(slug)` | `boolean` | The user hid this library from their own view. |
+| `orderIndex(slug)` | `number` | Effective per-user sort position - use as a CSS `order` value. |
+| `route(lib)` | `string` | Frontend list-route path (built-ins → `/library` / `/games` / `/emulation` / `/couch`; custom → `/lib/:slug`). |
+| `label(lib)` | `string` | Localised display name (built-ins use the UI translations; custom = its name). |
+| `slugForPath(path)` | `string \| null` | Which library a list-route path belongs to (`null` = not a library list route, e.g. a detail page). Decide which library view to render and which library to fetch. |
+| `loaded` | `boolean` | The registry has been fetched. |
+| `fetch()` | `Promise` | (Re)load the registry. |
+
+`route`, `label` and `slugForPath` accept either a slug string or a `LibraryInfo`.
+
+**`LibraryInfo`:**
+```typescript
+{ slug, name, kind, icon, color, enabled, sort_order, is_builtin, storage_folder }
+// kind: "gog" | "custom" | "emulation" | "couch" | "collection"
+// icon: "builtin:<name>" | "/resources/..." (uploaded image) | null
+```
+
+#### Recently-added rows - `window.__GD__.recentLibraries`
+
+Per-theme, per-user choice of which libraries show a "recently added" row on the
+home page. Drive your home feed from it:
+
+```javascript
+const recent = window.__GD__.recentLibraries;
+recent.isEnabled('games');   // show a recently-added row for this library?
+recent.get();                // resolved list of slugs to show (visible, non-couch)
+```
+
+#### Library icons - `window.__GD__.icons`
+
+A library's `icon` is either an uploaded image URL or a `"builtin:<name>"` token.
+For built-ins, fetch the inline SVG markup and tint it with the library colour:
+
+```javascript
+const lib = libs.bySlug('games');
+if (lib.icon && lib.icon.startsWith('builtin:')) {
+  const svg = window.__GD__.icons.library(lib.icon.slice(8)); // inner <path…> markup
+  el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${lib.color}" stroke-width="2">${svg}</svg>`;
+} else if (lib.icon) {
+  el.innerHTML = `<img src="${lib.icon}">`;
+}
+```
+
+#### Example - a data-driven nav
+
+```javascript
+const libs = window.__GD__.stores.libraries();
+const { useRouter } = window.__GD__.VueRouter;
+const router = useRouter();
+
+// Tabs in the user's order (couch usually has its own entry / view)
+const tabs = [...libs.visible]
+  .filter(l => l.kind !== 'couch')
+  .sort((a, b) => libs.orderIndex(a.slug) - libs.orderIndex(b.slug))
+  .map(l => ({ label: libs.label(l), to: libs.route(l), order: libs.orderIndex(l.slug) }));
+
+// Which of MY library views to render for the current route (null on detail pages):
+const slug = libs.slugForPath(router.currentRoute.value.path);
+```
+
+#### Reactivity (compiled Vue themes)
+
+As with theme settings, Pinia reactivity may not cross the plugin boundary.
+Snapshot what you render into a local `ref` and refresh it on the
+`gd-theme-updated` event (fired on hide / reorder / recently-added changes) plus a
+light poll - see the **gd-theme-updated event** section above.
 
 ### registerMetadataTab
 
