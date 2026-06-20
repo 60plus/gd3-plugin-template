@@ -220,10 +220,17 @@ window.__GD__ = {
         socket(),     // returns { syncProgress } - raw socket BLOCKED
         theme(),      // returns full theme store (themeId, skinId, settings, applyToDOM, ...)
         libraries(),  // library registry store - see "Library Registry API" below (v1.0.11)
+        collections(),// collections registry store - see "Collections API" below (v1.0.12)
     },
 
     // Authenticated Axios client (Bearer token auto-attached)
     api: AxiosInstance,
+
+    // Shared utility helpers for theme/plugin authors (v1.0.12) - see "Shared utilities" below
+    utils: {
+        buildLanguageList(dict),  // [{ name, flag }] from a languages object
+        sanitizeHtml(html),       // sanitize an HTML description for v-html
+    },
 
     // Theme/layout registration (only needed for non-Vue JS plugins)
     registerTheme(themeDefinition),
@@ -243,6 +250,17 @@ window.__GD__ = {
         library(name),    // inner SVG markup for a built-in library icon (tint with currentColor)
         libraryNames(),   // list of built-in icon names
         libraryAll(),     // { name: svgMarkup } map
+    },
+
+    // Collections - admin-curated game groupings (v1.0.12) - see "Collections API" below
+    collections: {
+        list(),              // reactive array of collections
+        fetch(),             // (re)load the collections list
+        bySlug(slug),        // a loaded collection summary by slug
+        get(slug),           // full detail incl. member games (Promise)
+        forGame(id),         // slugs of the collections a game belongs to (Promise)
+        route(slug),         // route to one collection (nested under its container library)
+        libraryRoute(lib),   // route to a container library's collection grid
     },
 
     // Couch Mode composables
@@ -304,7 +322,7 @@ const libs = window.__GD__.stores.libraries();
 **`LibraryInfo`:**
 ```typescript
 { slug, name, kind, icon, color, enabled, sort_order, is_builtin, storage_folder }
-// kind: "gog" | "custom" | "emulation" | "couch" | "collection"
+// kind: "gog" | "custom" | "custom_lib" | "emulation" | "couch" | "collections"
 // icon: "builtin:<name>" | "/resources/..." (uploaded image) | null
 ```
 
@@ -357,6 +375,103 @@ As with theme settings, Pinia reactivity may not cross the plugin boundary.
 Snapshot what you render into a local `ref` and refresh it on the
 `gd-theme-updated` event (fired on hide / reorder / recently-added changes) plus a
 light poll - see the **gd-theme-updated event** section above.
+
+### Collections API (`stores.collections` / `__GD__.collections`) - v1.0.12
+
+Collections are admin-curated groupings of related games (for example a series or a
+franchise), styled like the rest of the library. Each collection lives inside a
+**container library** (a library of `kind: "collections"`), so a theme can render
+the collection grid and the per-collection detail page entirely data-driven, the
+same way it renders libraries.
+
+The container library already appears in `stores.libraries().visible` (its `kind`
+is `"collections"`), so your existing nav / library code lists it automatically.
+Use this API to fill in the grid of collections and the collection detail.
+
+```javascript
+const collections = window.__GD__.collections;
+```
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `list()` | `CollectionInfo[]` | Reactive list of all collections (read after boot, or call `fetch()` first). |
+| `fetch()` | `Promise` | (Re)load the collections list. |
+| `bySlug(slug)` | `CollectionInfo \| undefined` | A loaded collection summary by slug. |
+| `get(slug)` | `Promise<CollectionDetail>` | A collection's full detail, including its member games. |
+| `forGame(id)` | `Promise<string[]>` | The collection slugs a game belongs to. |
+| `route(slug)` | `string` | Route to one collection, nested under its container library (`/collections/:lib/:slug`). |
+| `libraryRoute(lib)` | `string` | Route to a container library's collection grid (`/collections/:lib`). |
+
+The same helpers are also exposed as a raw Pinia store at
+`window.__GD__.stores.collections()`.
+
+**`CollectionInfo`** (summary, from `list` / `bySlug`):
+```typescript
+{
+  slug, name, library,             // library = slug of the container library
+  description, description_short,  // long (About) + short (list hero) - may contain HTML
+  cover_path,                      // custom cover, or null = auto fan of member covers
+  member_covers, member_heroes,    // arrays of member art URLs (fan covers / backdrops)
+  member_count,
+  start_year, end_year, rating,    // aggregated from members unless overridden
+  developers, publishers, sources, platforms,  // aggregated from member games
+}
+```
+
+**`CollectionDetail`** (from `get(slug)`) adds the resolved member games plus the
+aggregated metadata used by the detail view:
+```typescript
+{
+  ...CollectionInfo,
+  games: GameDict[],               // member games (id, title, cover, source, gog_game_id, ...)
+  genres: string[],
+  languages: { [code]: ... },      // merged languages dict (same shape as a game) - feed buildLanguageList
+  hltb_main_s, hltb_complete_s,    // average (or overridden) time-to-beat, in seconds
+}
+```
+
+> **Opening a member game:** a member game with `source === 'gog'` must be opened by
+> its `gog_game_id` (the GOG detail route resolves by GOG id); every other game by
+> its `id`. Mixing the two opens the wrong game.
+
+#### Example - a collection grid
+
+```javascript
+const collections = window.__GD__.collections;
+
+await collections.fetch();
+const cards = collections.list()
+  .filter(c => c.library === containerSlug)        // collections in this container
+  .map(c => ({ name: c.name, to: collections.route(c.slug), covers: c.member_covers }));
+```
+
+#### Reactivity
+
+As with the library registry, Pinia reactivity may not cross the plugin boundary -
+snapshot what you render into a local `ref` and refresh it on the
+`gd-theme-updated` event plus a light poll (see the **gd-theme-updated event**
+section above).
+
+### Shared utilities - `window.__GD__.utils` (v1.0.12)
+
+Helpers the built-in themes use, exposed so plugins produce identical output
+without importing app internals (plugins only have `window.__GD__`, not `@/utils`).
+
+```javascript
+const { buildLanguageList, sanitizeHtml } = window.__GD__.utils || {};
+```
+
+| Helper | Signature | Description |
+|--------|-----------|-------------|
+| `buildLanguageList(dict)` | `(languages) => { name, flag }[]` | Turns a game's (or collection's) languages object into the display list the built-in themes use. `flag` is a `flag-icons` ISO-2 code - render it as `<span class="fi fi-${flag}">`. |
+| `sanitizeHtml(html)` | `(html) => string` | Sanitizes an HTML string (a game / collection description) for safe use with `v-html` or `innerHTML`. |
+
+Guard for older cores, since `utils` is only present on v1.0.12+:
+```javascript
+const _u = window.__GD__.utils || {};
+const sanitizeHtml = _u.sanitizeHtml || (h => h);
+const buildLanguageList = _u.buildLanguageList || (() => []);
+```
 
 ### registerMetadataTab
 
