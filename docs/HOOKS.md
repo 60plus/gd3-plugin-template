@@ -202,6 +202,15 @@ Compiled plugins auto-register - you do not need to call `registerPluginLayout()
 - `vue` - `window.__GD__.Vue`
 - `vue-router` - `window.__GD__.VueRouter`
 
+**Gotchas of the compiled pipeline:**
+- **Always bind image sources** (`:src="'/path.png'"`), never a static
+  `src="/path.png"` - the compiler rewrites static asset references and a
+  plain `src` can end up stripped from the bundle.
+- Only import from `vue`, `vue-router` and your own local `.vue` files -
+  anything else is not resolvable at runtime.
+- Pinia reactivity may not cross the plugin boundary - snapshot into local
+  refs and refresh on the `gd-theme-updated` event (see above).
+
 ### window.__GD__ API reference
 
 Available to all plugin JavaScript (both `frontend_get_js()` and compiled Vue components):
@@ -238,6 +247,7 @@ window.__GD__ = {
     registerPluginCouchMode(themeId, VueComponent),
     registerMetadataTab(tab),     // add a tab to the game metadata editor (see below)
     registerDetailRow(row),       // add a theme-native row to the game detail card (v1.0.10)
+    resolveDetailRows(game, library),  // consumer side for themes with own detail pages (v1.0.15)
 
     // Library registry helpers (v1.0.11) - see "Library Registry API" below
     recentLibraries: {
@@ -261,6 +271,31 @@ window.__GD__ = {
         forGame(id),         // slugs of the collections a game belongs to (Promise)
         route(slug),         // route to one collection (nested under its container library)
         libraryRoute(lib),   // route to a container library's collection grid
+    },
+
+    // Theme-declared home sections (v1.0.15) - see "Theme home sections" below
+    homeSections: {
+        register(sections),  // register([{id, label}]) -> unregister()
+        list(),              // the active theme's registered sections
+        isHidden(id),        // has the user switched this section off?
+    },
+
+    // Shared editors and styled dialogs - see "Shared editors and dialogs" below
+    ui: {
+        openMetadataEditor({ game, apiPrefix?, onSaved?, onClosed? }),
+        closeMetadataEditor(),
+        openCollectionEditor(collectionOrSlug, { onUpdated?, onDeleted?, onClosed? }),
+        closeCollectionEditor(),
+        openRomMetadataEditor({ rom, onSaved?, onClosed? }),   // v1.0.15
+        closeRomMetadataEditor(),
+        confirm(msg, opts?),  // styled confirm dialog -> Promise<boolean> (v1.0.15)
+        alert(msg, opts?),    // styled alert dialog (v1.0.15)
+        openAbout(),          // the shared About dialog (v1.0.15)
+    },
+
+    // Read-only server progress events (v1.0.15) - see "Server progress events" below
+    events: {
+        on(event, cb),        // subscribe to a whitelisted event -> unsubscribe fn
     },
 
     // Couch Mode composables
@@ -473,6 +508,131 @@ const sanitizeHtml = _u.sanitizeHtml || (h => h);
 const buildLanguageList = _u.buildLanguageList || (() => []);
 ```
 
+### registerDetailRow / resolveDetailRows - v1.0.10 / v1.0.15
+
+`registerDetailRow(row)` lets ANY plugin add a row to the game detail card and
+have the ACTIVE THEME render it natively (fonts, colors and layout follow the
+theme - no DOM injection needed):
+
+```javascript
+window.__GD__.registerDetailRow({
+  id: 'my-plugin-score',        // unique row id
+  library: 'games',             // 'games' | 'gog' | 'all' (default 'all')
+  resolve({ game, library }) {  // called per game; return null to skip the row
+    return {
+      label: 'My Score',                 // key column (omit with fullWidth)
+      segments: [                        // declarative value content
+        { text: '87 / 100', color: '#4ade80' },
+      ],
+      details: {                         // optional "Show details" expander
+        toggleLabel: 'Show breakdown',
+        items: [ [{ text: 'Story: 9' }], [{ text: 'Gameplay: 8' }] ],
+      },
+      color: '#4ade80',                  // row accent
+      title: 'Tooltip text',
+      fullWidth: false,                  // true = span the card, no label column
+      // render(el, ctx) {}              // escape hatch: draw the value yourself
+    };
+  },
+});
+```
+
+Themes that build their OWN detail pages call the consumer side (v1.0.15) and
+render the resolved rows wherever they fit:
+
+```javascript
+const rows = window.__GD__.resolveDetailRows(game, 'games');
+// -> [{ id, label?, segments?, details?, fullWidth?, color?, title?, class? }, ...]
+```
+
+A row whose `resolve` throws is skipped - a misbehaving plugin cannot break
+the detail page.
+
+### Shared editors and dialogs (`__GD__.ui`)
+
+Themes that render their own detail pages still get the CORE editors (plugin
+metadata tabs mount inside them, so they must stay shared components). Call:
+
+```javascript
+const ui = window.__GD__.ui;
+
+// Game metadata editor. apiPrefix defaults to the game's library routes.
+ui.openMetadataEditor({ game, onSaved(updated) {}, onClosed() {} });
+
+// Collection editor (v1.0.12).
+ui.openCollectionEditor(collectionOrSlug, { onUpdated() {}, onDeleted() {}, onClosed() {} });
+
+// ROM metadata editor (v1.0.15) - the emulation twin of the game editor
+// (ratings, time-to-beat, per-media upload/clear, search-by-title).
+ui.openRomMetadataEditor({ rom, onSaved(updated) {}, onClosed() {} });
+```
+
+Saves also dispatch DOM events - `gd-game-updated`, `gd-collection-updated`
+and `gd-rom-updated` (detail `{ id }`) - so passive views can refetch.
+
+Styled dialogs (v1.0.15) replace browser-native `confirm()` / `alert()` so
+plugins match every theme:
+
+```javascript
+const ok = await ui.confirm('Delete this?', { title: 'Delete', danger: true,
+                                              confirmText: 'Delete', cancelText: 'Cancel' });
+await ui.alert('Done!', { title: 'Info' });
+```
+
+`ui.openAbout()` (v1.0.15) opens the shared About dialog (logo, running GD
+version, Discord invite) - add an "About" entry to your theme's user menu and
+guard it with `if (__GD__.ui?.openAbout)` so the theme still works on older
+cores.
+
+### Theme home sections (`__GD__.homeSections`) - v1.0.15
+
+A theme layout with its own extra home-page sections (trailer shelf, genre
+tiles, ...) registers them on mount; Settings -> Libraries then offers
+per-user on/off toggles for them automatically:
+
+```javascript
+const un = window.__GD__.homeSections.register([
+  { id: 'trailers', label: 'vp.sec_trailers' },   // label may be an i18n key
+  { id: 'genres',   label: 'vp.sec_genres' },
+]);
+onUnmounted(un);                                   // unregister on unmount
+
+// While rendering, skip switched-off sections and re-read on gd-theme-updated:
+if (!window.__GD__.homeSections.isHidden('trailers')) { /* render it */ }
+```
+
+### Server progress events (`__GD__.events`) - v1.0.15
+
+A narrow, read-only bridge to server Socket.IO progress events (the raw socket
+stays off-limits). Only whitelisted events can be subscribed:
+
+```javascript
+const off = window.__GD__.events.on('upload:url_progress', (data) => { ... });
+// later: off()
+```
+
+| Event | Fired |
+|-------|-------|
+| `torrent:download_progress` / `_complete` / `_error` | torrent-based game downloads |
+| `upload:url_progress` / `_complete` / `_error` | server-side URL uploads |
+
+### Emulation data for theme pages - v1.0.15
+
+Endpoints a theme can build Retro / home ROM sections from (all through
+`__GD__.api`, auth attached automatically):
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /roms/recent?limit=N` | Latest ROMs as full tile dicts: `id, name, platform_slug, platform_fs_slug, platform_name, cover_path, background_path, wheel_path, release_year, genres, player_count, fs_size_bytes, created_at, rating_agg` |
+| `GET /roms/top-rated?limit=N` | Same tile shape, ranked by `rating_agg` (aggregate 0-5 from ScreenScraper / IGDB / LaunchBox / plugin ratings) |
+| `GET /roms?platform_slug=X&limit=N` | A platform's catalogue (list items do NOT carry platform fields - enrich client-side) |
+| `POST /roms/platforms/{slug}/scrape?mode=new\|missing\|force` | Batch scrape: `new` = unidentified only, `missing` = fill per-field gaps only (existing data and media untouched), `force` = overwrite everything |
+| `POST /roms/{id}/media/{kind}/upload` | Multipart upload of `cover/background/support/wheel/bezel/steamgrid/video` (+`screenshot` appends) |
+| `PATCH /roms/{id}` | Metadata update; an EMPTY STRING on a `*_path` field clears that media (column + file), `null`/absent = no change |
+
+`window.__GD__.getEjsCore(platformFsSlug)` tells whether a platform is
+playable in the browser (returns the EmulatorJS core name or `null`).
+
 ### registerMetadataTab
 
 Adds a tab to the **Edit Metadata** panel of a library game, next to the
@@ -614,12 +774,28 @@ For plugins that fetch game metadata from external sources. These hooks work acr
 |------|---------|-------------|
 | `metadata_provider_name()` | `str` | Display name (e.g. "PPE.pl") |
 | `metadata_provider_id()` | `str` | Unique ID (e.g. "ppe") |
+| `metadata_provider_ratings()` | `bool` | Does this provider return numeric 0-10 ratings? (v1.0.15, see below) |
 | `metadata_search_game(query)` | `list[dict]` | Search results |
 | `metadata_get_game(provider_game_id)` | `dict or None` | Full game metadata |
 | `metadata_get_cover_url(provider_game_id)` | `str or None` | Cover image URL |
 | `metadata_get_covers(query)` | `list[dict]` | Cover/box art images for a game title |
 | `metadata_get_heroes(query)` | `list[dict]` | Hero/background/fanart images |
 | `metadata_get_logos(query)` | `list[dict]` | Clear logo / wheel images |
+
+### metadata_provider_ratings - v1.0.15
+
+Providers whose `meta_ratings` values are numeric 0-10 game scores return
+`True` (or simply omit the hook - that is the default): their entries are
+rendered as scores, feed the aggregate rating and are editable in the rating
+editors. A provider whose values are badges or tiers rather than scores
+(a compatibility status, a certification, ...) MUST implement the hook and
+return `False`, otherwise its entries would surface as fake ratings:
+
+```python
+@hookimpl
+def metadata_provider_ratings(self) -> bool:
+    return False
+```
 
 ### Search result dict
 

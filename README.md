@@ -49,7 +49,7 @@ my-plugin/
   "type": "metadata",
   "entry": "plugin.py",
   "requires": ["httpx", "beautifulsoup4"],
-  "min_gd_version": "3.0.0",
+  "min_gd_version": "1.0.15",
   "config_schema": {
     "api_key": {
       "type": "string",
@@ -66,6 +66,8 @@ my-plugin/
 ```
 
 Config schema fields are rendered as a settings form in Settings > Plugins. Supported types: `string`, `number`, `boolean`, `select`.
+
+> **min_gd_version** is the lowest GamesDownloader version your plugin works on - set it to the version that introduced the newest API you call. Since GamesDownloader **v1.0.15** it is ENFORCED: installing a plugin on an older server is refused (upload, URL and store installs alike), and the Plugin Store greys the Install button out with a "Requires GD x.y.z+" badge. The store also shows the running server version ("GD Version") next to the Available Plugins header.
 
 > **config_schema vs theme settings:** Theme plugins use `frontend_get_theme().settings[]` for appearance settings (blur, particles, colors) - these are rendered in Settings > Appearance > Theme Settings. The `config_schema` in plugin.json is for plugin configuration (rendered in Settings > Plugins). Theme plugins typically have empty `"config_schema": {}`.
 
