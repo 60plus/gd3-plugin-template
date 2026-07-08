@@ -273,6 +273,16 @@ window.__GD__ = {
         libraryRoute(lib),   // route to a container library's collection grid
     },
 
+    // Unified, library-aware add-content actions (v1.0.17) - see "Library actions API" below
+    library: {
+        createGame({ title, library }),                       // -> game (has .id)
+        uploadFile(gameId, file, { os, fileType, onProgress }),
+        uploadFromUrl(gameId, { url, os, fileType }),         // -> { id, filename }
+        addTorrent({ source, title, os, library, isFile }),  // -> download record
+        scan(librarySlug?),                                   // -> { created, updated, ... }
+        addByUpload({ library, title, file, os, fileType, onProgress }),  // create + upload
+    },
+
     // Theme-declared home sections (v1.0.15) - see "Theme home sections" below
     homeSections: {
         register(sections),  // register([{id, label}]) -> unregister()
@@ -486,6 +496,57 @@ As with the library registry, Pinia reactivity may not cross the plugin boundary
 snapshot what you render into a local `ref` and refresh it on the
 `gd-theme-updated` event plus a light poll (see the **gd-theme-updated event**
 section above).
+
+### Library actions API (`window.__GD__.library`) - v1.0.17
+
+Adding content to a library - create a game, upload a file, upload from a URL,
+add a torrent, scan a folder - is **the same operation in every theme**. Rather
+than each theme re-implementing raw `api.post()` calls (and re-implementing
+library targeting each time), call this shared API. Your theme keeps its own
+dialogs and progress UI; the API owns the endpoint shapes and the library
+targeting rules (folder, membership, and keeping the game out of the default
+Games library).
+
+The `library` argument is a library slug. `"games"`, `""`, `null` and `undefined`
+all mean the built-in Games library; a folder-backed custom library's slug routes
+the game (and its files, and any torrent that finishes) into that library.
+
+```javascript
+const lib = window.__GD__.library;
+
+// Create a game in the current library
+const game = await lib.createGame({ title: "My Game", library: currentSlug });
+
+// Upload a local file to it (onProgress gets 0-100)
+await lib.uploadFile(game.id, file, {
+  os: "windows", fileType: "game",
+  onProgress: (percent) => { progress.value = percent; },
+});
+
+// Convenience: create + upload in one call (used by themes with a file-only dialog)
+await lib.addByUpload({
+  library: currentSlug, title: "My Game", file,
+  os: "windows", fileType: "game",
+  onProgress: (p) => { progress.value = p; },
+});
+```
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `createGame` | `({ title, library? })` | game object (has `.id`) | Also accepts optional `slug`, `description`, `description_short`, `developer`, `publisher`, `genres`, `tags`. |
+| `uploadFile` | `(gameId, file, { os?, fileType?, language?, version?, onProgress? })` | file record | Destination folder follows the game's library automatically. `onProgress(percent, ev)`. |
+| `uploadFromUrl` | `(gameId, { url, os?, fileType?, language?, version? })` | `{ id, filename }` | Server downloads in the background; follow the `upload:url_progress\|complete\|error` events keyed on the returned `id`. |
+| `addTorrent` | `({ source, title, os?, library?, isFile? })` | download record (has `.id`, `.percent`) | `source` is a magnet/URL string, or a `File` when `isFile: true`. When the download finishes it auto-registers into `library`. Follow `torrent:download_*` events keyed on `id`. |
+| `scan` | `(librarySlug?)` | `{ created, updated, errors, libraries }` | With a slug, scans only that library's folder; without one, scans the built-in Games folder plus every folder-backed custom library. |
+| `addByUpload` | `({ library?, title, file, os?, fileType?, language?, version?, onProgress? })` | game object | `createGame` + `uploadFile` for the common file-only add flow. |
+
+The URL-upload and torrent flows report progress over socket.io - subscribe with
+`window.__GD__.events.on(...)` (see **Server progress events** below).
+
+This API is v1.0.17+, so a theme that uses it must set `"min_gd_version":
+"1.0.17"` in `plugin.json` (the store install gate enforces it). If you prefer to
+keep a lower minimum, feature-detect instead and hide the add/upload controls
+when `window.__GD__.library` is absent.
 
 ### Shared utilities - `window.__GD__.utils` (v1.0.12)
 
