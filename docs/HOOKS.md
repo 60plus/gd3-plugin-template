@@ -22,7 +22,44 @@ For plugins that provide themes, custom layouts, CSS, JavaScript, and routes.
 | `frontend_get_theme()` | `dict or None` | Theme definition (layout, skins, settings) |
 | `frontend_get_css()` | `str or None` | CSS string injected into `<head>` via `/api/plugins/frontend/css` |
 | `frontend_get_js()` | `str or None` | JavaScript string injected into `<head>` via `/api/plugins/frontend/js` |
-| `frontend_get_routes()` | `list[dict] or None` | Custom page routes (reserved for future use) |
+| `frontend_get_routes()` | `list[dict] or None` | Custom pages (nav entry + URL); pair with `__GD__.registerRoute` in `frontend_get_js` |
+
+### Custom pages (`frontend_get_routes`)
+
+A plugin can add its own full page with a menu entry. Return a list of routes
+from `frontend_get_routes()`; each becomes `/x/<path>` and shows up in the user
+menu (and in any theme that reads `__GD__.pluginRoutes`):
+
+```python
+@hookimpl
+def frontend_get_routes(self):
+    return [{"path": "my-page", "label": "My Page", "icon": "mdi-puzzle"}]
+```
+
+Render the page from `frontend_get_js()` by registering a mount function against
+the same path. GD calls it with the host element and passes `{path, api, t}`;
+return an optional cleanup function:
+
+```python
+@hookimpl
+def frontend_get_js(self):
+    return r"""
+(function () {
+  var gd = window.__GD__;
+  if (!gd || typeof gd.registerRoute !== 'function') return;
+  gd.registerRoute({
+    path: 'my-page',
+    mount: function (el) {
+      el.innerHTML = '<h1 style="padding:24px">Hello from my plugin</h1>';
+      return function () { el.innerHTML = ''; };   // optional cleanup
+    }
+  });
+})();
+"""
+```
+
+The page is reachable at `/x/my-page`. Aggregated routes are served from
+`GET /api/plugins/frontend/routes` (consumed by the SPA at startup).
 
 ### Theme definition dict
 
@@ -955,6 +992,11 @@ For plugins that handle game downloads.
 | `download_start(game_id, destination)` | `dict` | Start download, return `{task_id}` |
 | `download_get_status(task_id)` | `dict` | Progress: `{progress, status, ...}` |
 
+Registered providers are discoverable at `GET /api/plugins/download/providers`
+(with `?game_id=` reporting `can_handle`), started via
+`POST /api/plugins/download/providers/{id}/start`, and polled via
+`GET /api/plugins/download/providers/{id}/status/{task_id}`.
+
 ---
 
 ## LibrarySourceSpec
@@ -967,25 +1009,59 @@ For plugins that scan game libraries from various sources.
 | `library_source_id()` | `str` | Unique ID |
 | `library_scan(path)` | `list[dict]` | Discovered games/ROMs |
 
+Registered sources are listed at `GET /api/plugins/library/sources` and scanned
+via `POST /api/plugins/library/sources/{id}/scan`.
+
 ---
 
 ## LifecycleSpec
 
-For plugins that react to application events.
+For plugins that react to application events. `game` is a plain dict
+(`{id, title, source, slug, gog_game_id}`); fetch anything more via the API
+using `id`. Hooks are fired best-effort - a raised exception is logged and never
+breaks the library write or the launch.
 
 | Hook | Returns | Description |
 |------|---------|-------------|
-| `lifecycle_on_game_added(game)` | `None` | Called when a game is added |
-| `lifecycle_on_download_complete(game, path)` | `None` | Called when a download finishes |
+| `lifecycle_on_game_added(game)` | `None` | A game was added to the library (custom create / GOG publish / torrent finish) |
+| `lifecycle_on_download_complete(game, path)` | `None` | A download finished (`path` = destination folder) |
+| `lifecycle_on_play_start(game)` | `None` | A game/ROM was launched in the player |
+| `lifecycle_on_play_end(game, seconds)` | `None` | A play session ended (`seconds` = elapsed play time) |
 | `lifecycle_on_startup()` | `None` | Called on app start |
 | `lifecycle_on_shutdown()` | `None` | Called on app stop |
+
+> `lifecycle_on_startup` does not fire for a hot-loaded (folder-dropped) plugin -
+> run one-time setup from the plugin's `__init__` instead.
+
+### Recently-added notification (built in)
+
+GamesDownloader sends its own rich "recently added" notification (Discord embed
++ optional email) when a game or ROM becomes ready - no plugin required. It is
+controlled in **Settings > Notifications** (the *Recently added* toggles,
+server name and templates). `lifecycle_on_game_added` fires alongside that
+built-in delivery, so a plugin can react or route the event elsewhere on top of
+it. ROM launches also expose `POST /api/roms/{id}/play/start|end`, which fire the
+play hooks above.
 
 ---
 
 ## WidgetSpec
 
-For plugins that add dashboard cards.
+For plugins that add dashboard cards. Cards render on the built-in Dashboard
+page (`/dashboard`) and are served from `GET /api/plugins/dashboard/cards`.
 
 | Hook | Returns | Description |
 |------|---------|-------------|
 | `widget_get_cards()` | `list[dict] or None` | Widget card definitions |
+
+Each card: `{id, title, value, subtitle, icon, link}` - `icon` is an mdi name
+(e.g. `"mdi-controller"`), `link` an in-app path (e.g. `"/x/my-page"`).
+
+```python
+@hookimpl
+def widget_get_cards(self):
+    return [{
+        "id": "my-stat", "title": "My Plugin", "value": "42",
+        "subtitle": "things tracked", "icon": "mdi-chart-box", "link": "/x/my-page",
+    }]
+```
