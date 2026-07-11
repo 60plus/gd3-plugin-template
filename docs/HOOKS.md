@@ -548,6 +548,40 @@ This API is v1.0.17+, so a theme that uses it must set `"min_gd_version":
 keep a lower minimum, feature-detect instead and hide the add/upload controls
 when `window.__GD__.library` is absent.
 
+#### Packaging a game's files - `package` / `packable` (v1.0.19)
+
+An admin can bundle a library game's loose files into archives: one per group
+(each OS platform, plus extras and DLC), or everything into a single combined
+archive. This is the same operation the core Package dialog uses, so a theme can
+offer its own Package button and drive it directly. Works for GOG, custom, and
+admin custom-library games.
+
+```javascript
+const lib = window.__GD__.library;
+
+// Which groups have something to bundle right now (a folder with 2+ files).
+// Returns group labels, e.g. ["windows", "linux", "extras", "dlc"].
+const groups = await lib.packable(game.id);
+
+// Package selected groups - each becomes its own download:
+//   {Title}.zip per OS platform, extras.zip, dlc.zip
+await lib.package(game.id, { groups, deleteOriginals: false });
+
+// Or bundle EVERYTHING into one combined {Title}.zip
+await lib.package(game.id, { singleArchive: true, deleteOriginals: true });
+```
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `packable` | `(gameId)` | `string[]` | Group labels worth bundling (a folder with 2+ files: `windows` / `mac` / `linux` / `extras` / `dlc`). Empty when nothing is packable, so a theme can show or hide its Package button. |
+| `package` | `(gameId, { groups?, deleteOriginals?, singleArchive? })` | `{ ok, started, platforms }` | Omit `groups` to package every group. `singleArchive: true` combines all files into one `{Title}.zip` (available even when no single folder has 2+ files). `deleteOriginals` removes the loose files after zipping (overrides the global setting). Admin-only. |
+
+Extras and DLC are bundled even when their files are already individual `.zip`
+archives (glued, not re-compressed); a group with a single file is not offered.
+Packaging runs in the background; progress streams over the `download:packaging`
+socket event (subscribe with `window.__GD__.events.on(...)`). Requires
+`"min_gd_version": "1.0.19"`.
+
 ### Shared utilities - `window.__GD__.utils` (v1.0.12)
 
 Helpers the built-in themes use, exposed so plugins produce identical output
