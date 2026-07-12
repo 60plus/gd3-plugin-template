@@ -7,7 +7,7 @@
   "type": "lifecycle",
   "entry": "plugin.py",
   "requires": ["translate-shell"],
-  "min_gd_version": "3.0.0",
+  "min_gd_version": "1.0.9",
   "config_schema": {
     "from_lang": {
       "type": "select",

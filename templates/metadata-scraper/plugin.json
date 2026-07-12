@@ -7,7 +7,7 @@
   "type": "metadata",
   "entry": "plugin.py",
   "requires": ["httpx", "beautifulsoup4"],
-  "min_gd_version": "3.0.0",
+  "min_gd_version": "1.0.0",
   "config_schema": {
     "enabled": {
       "type": "boolean",

@@ -65,7 +65,44 @@ my-plugin/
 }
 ```
 
-Config schema fields are rendered as a settings form in Settings > Plugins. Supported types: `string`, `number`, `boolean`, `select`.
+### Manifest fields
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `id` | yes | Unique plugin id (kebab-case). Also the install folder name and the `plugin_id` you pass to `get_plugin_config()`. |
+| `name` | yes | Human-readable name shown in Settings and the store. |
+| `version` | yes | Semver string; drives update detection and the built ZIP filename (`<id>-v<version>.zip`). |
+| `type` | yes | Which hook family this plugin implements: `metadata`, `download`, `library`, `lifecycle`, `theme`, or `widget`. A plugin may implement more than one family; `type` is the primary one used for grouping. |
+| `entry` | yes (Python) | The Python module holding your `Plugin` class (usually `plugin.py`). A theme with no Python still sets it (the templates use `plugin.py`). |
+| `min_gd_version` | yes | Lowest supported GamesDownloader version (see below). |
+| `author` | no | Your name/handle, shown in the store. |
+| `description` | no | One-line summary shown in Settings and the store. |
+| `requires` | no | Extra pip packages your `plugin.py` imports, installed on load, e.g. `["httpx", "beautifulsoup4"]`. Leave `[]` if none. |
+| `has_logo` | no | `true` when you ship a `logo.png` or `logo.svg` next to `plugin.json`; it is used as the plugin icon. |
+| `config_schema` | no | User-editable settings form (see below). Theme *appearance* settings go in `frontend_get_theme().settings[]` instead, not here. |
+
+Config schema fields render as a settings form in **Settings > Plugins**. Supported `type` values: `string`, `number`, `boolean`, `select`. A `select` field MUST include an `options` array:
+
+```json
+"config_schema": {
+  "search_engine": {
+    "type": "select",
+    "options": ["bing", "duckduckgo"],
+    "default": "bing",
+    "label": "Primary search engine"
+  }
+}
+```
+
+**Reading your config.** Whatever the user saves is stored server-side and read synchronously from your `plugin.py` (no async, works from any hook):
+
+```python
+from plugins.manager import get_plugin_config
+
+cfg = get_plugin_config("my-plugin")     # the "id" from plugin.json
+engine  = cfg.get("search_engine", "bing")
+enabled = cfg.get("enabled", True)
+```
 
 > **min_gd_version** is the lowest GamesDownloader version your plugin works on - set it to the version that introduced the newest API you call. Since GamesDownloader **v1.0.15** it is ENFORCED: installing a plugin on an older server is refused (upload, URL and store installs alike), and the Plugin Store greys the Install button out with a "Requires GD x.y.z+" badge. The store also shows the running server version ("GD Version") next to the Available Plugins header.
 
@@ -89,6 +126,8 @@ class Plugin:
     def metadata_provider_id(self) -> str:
         return "my-source"
 ```
+
+> `from plugins.hookspecs import hookimpl` resolves against the GamesDownloader runtime (the `plugins` package lives in the server, not in your plugin). So it imports only when your plugin runs inside GD - it will not resolve if you run `plugin.py` standalone, and your editor may flag it as unresolved. That is expected; do not vendor a copy of `hookspecs`.
 
 See [docs/HOOKS.md](docs/HOOKS.md) for the full hook reference with all specs and return types.
 
@@ -475,15 +514,49 @@ neon-horizon/
 
 Each template has a `plugin.py` with TODO comments showing where to add your code.
 
+There is no dedicated starter for **download** (`DownloadProviderSpec`) or
+**library source** (`LibrarySourceSpec`) plugins yet, but they follow the exact
+same shape: a `Plugin` class with `@hookimpl` methods (see the matching sections
+in [docs/HOOKS.md](docs/HOOKS.md)). Copy the `metadata-scraper` template and swap
+the hooks you implement.
+
 ---
 
 ## Distribution
 
-To distribute your plugin:
+A plugin is distributed as a ZIP archive. Two packaging rules are strict, and getting either wrong makes the install fail:
 
-1. ZIP your plugin folder: `cd my-plugin && zip -r ../my-plugin-v1.0.0.zip .`
-2. Users install via Settings > Plugins (drag & drop ZIP)
-3. Or publish to a Plugin Store - see [gd3-plugin-store](https://github.com/60plus/gd3-plugin-store) for the store.json format
+- **`plugin.json` MUST be at the archive ROOT**, not inside a wrapping folder. The installer reads `/plugin.json`, so `my-plugin/plugin.json` inside the ZIP will not be found.
+- **Paths inside the ZIP must use forward slashes** (`assets/logo.png`, not `assets\logo.png`).
+
+The easiest way is the bundled helper, which enforces both and verifies the result:
+
+```bash
+./build.sh templates/metadata-scraper      # -> my-metadata-scraper-v1.0.0.zip
+```
+
+Equivalent by hand on Linux/macOS (note the trailing `.` and that you `cd` INTO the folder):
+
+```bash
+cd my-plugin && zip -r ../my-plugin-v1.0.0.zip . -x "*__pycache__*" "*.pyc"
+```
+
+On Windows, do NOT use PowerShell `Compress-Archive` for this - it writes backslash separators and often nests a top-level folder, both of which break the install. Use Python's `zipfile` instead (cross-platform, deterministic):
+
+```bash
+python -c "import zipfile,os; d='my-plugin'; z=zipfile.ZipFile('my-plugin-v1.0.0.zip','w',zipfile.ZIP_DEFLATED); [z.write(os.path.join(r,f), os.path.relpath(os.path.join(r,f),d).replace(os.sep,'/')) for r,_,fs in os.walk(d) for f in fs if '__pycache__' not in r and not f.endswith('.pyc')]; z.close()"
+```
+
+Always verify before shipping - `plugin.json` must appear with no path prefix:
+
+```bash
+unzip -l my-plugin-v1.0.0.zip | grep plugin.json    # -> "... plugin.json", NOT "... my-plugin/plugin.json"
+```
+
+Then either:
+
+- Users install it via **Settings > Plugins** (drag and drop the ZIP), or
+- Publish it to a Plugin Store - see [gd3-plugin-store](https://github.com/60plus/gd3-plugin-store) for the `store.json` format (the ZIP becomes a release asset).
 
 ---
 

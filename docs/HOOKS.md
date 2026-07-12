@@ -615,9 +615,14 @@ await lib.package(game.id, { singleArchive: true, deleteOriginals: true });
 
 Extras and DLC are bundled even when their files are already individual `.zip`
 archives (glued, not re-compressed); a group with a single file is not offered.
-Packaging runs in the background; progress streams over the `download:packaging`
-socket event (subscribe with `window.__GD__.events.on(...)`). Requires
-`"min_gd_version": "1.0.19"`.
+Packaging runs in the background: `package()` returns `{ started, platforms }`
+right away (it does not wait for the archives to finish). The server emits
+progress on a `download:packaging` socket event, but that event is **not** in the
+plugin event whitelist today (only the `torrent:download_*` and `upload:url_*`
+events are, see **Server progress events** below), so a plugin cannot subscribe to
+it through `__GD__.events.on`. In practice a theme shows a brief "packaging..."
+state after the call resolves; the built-in Package dialog behaves the same way.
+Requires `"min_gd_version": "1.0.19"`.
 
 #### GOG library sync and clearing metadata (v1.0.23)
 
@@ -953,6 +958,8 @@ For plugins that fetch game metadata from external sources. These hooks work acr
 | `metadata_get_covers(query)` | `list[dict]` | Cover/box art images for a game title |
 | `metadata_get_heroes(query)` | `list[dict]` | Hero/background/fanart images |
 | `metadata_get_logos(query)` | `list[dict]` | Clear logo / wheel images |
+| `metadata_search_collection(query)` | `list[dict]` | Search collections / franchises / series by name (v1.0.12) |
+| `metadata_get_collection(provider_collection_id)` | `dict or None` | Full metadata for one collection (v1.0.12) |
 
 ### metadata_provider_ratings - v1.0.15
 
@@ -1017,6 +1024,55 @@ Used by `metadata_get_covers()`, `metadata_get_heroes()`, and `metadata_get_logo
     "_source": "myplugin",                         # provider ID (used for logo badge)
 }
 ```
+
+### Collections - `metadata_search_collection` / `metadata_get_collection` (v1.0.12)
+
+A *collection* is a grouping of related games - a franchise or series (e.g. "Mass
+Effect", "Final Fantasy"). If your provider knows about franchises, implement
+these two hooks and the Collections feature can scrape collection info and
+artwork the same way it scrapes games.
+
+```python
+@hookimpl
+def metadata_search_collection(self, query: str) -> list[dict]:
+    # search franchises/series by name
+    return [{
+        "provider_id": "myplugin",
+        "provider_collection_id": "franchise/mass-effect",
+        "name": "Mass Effect",
+        "snippet": "Sci-fi RPG series by BioWare",   # optional
+        "cover_url": "https://.../me.jpg",            # optional
+        "start_year": 2007,                            # optional
+        "end_year": 2021,                              # optional
+    }]
+
+@hookimpl
+def metadata_get_collection(self, provider_collection_id: str) -> dict | None:
+    # full metadata for one collection (the id returned by search above)
+    return {
+        "provider_id": "myplugin",
+        "name": "Mass Effect",
+        "description": "Full description...",       # optional
+        "description_short": "Sci-fi RPG series",   # optional
+        "cover_url": "https://.../me.jpg",          # optional
+        "hero_url": "https://.../me_hero.jpg",      # optional
+        "logo_url": "https://.../me_logo.png",      # optional
+        "start_year": 2007,                          # optional
+        "end_year": 2021,                            # optional
+        "rating": 4.5,                               # optional, 0-5 scale (see note)
+        "source_url": "https://.../mass-effect",    # optional
+    }
+```
+
+Two things to know:
+
+- **Rating scale differs.** `metadata_get_collection`'s `rating` is on a **0-5**
+  scale, unlike `metadata_get_game`'s `rating`, which is **0-10**. Do not mix them.
+- **Artwork hooks are reused for collections.** There are no separate collection
+  artwork hooks - the Collections editor calls your `metadata_get_covers`,
+  `metadata_get_heroes` and `metadata_get_logos` with the **collection name** as
+  the `query` (instead of a game title). If your image hooks only understand game
+  titles, either handle franchise names too or return an empty list for them.
 
 ---
 
