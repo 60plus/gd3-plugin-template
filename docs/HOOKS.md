@@ -616,13 +616,13 @@ await lib.package(game.id, { singleArchive: true, deleteOriginals: true });
 Extras and DLC are bundled even when their files are already individual `.zip`
 archives (glued, not re-compressed); a group with a single file is not offered.
 Packaging runs in the background: `package()` returns `{ started, platforms }`
-right away (it does not wait for the archives to finish). The server emits
-progress on a `download:packaging` socket event, but that event is **not** in the
-plugin event whitelist today (only the `torrent:download_*` and `upload:url_*`
-events are, see **Server progress events** below), so a plugin cannot subscribe to
-it through `__GD__.events.on`. In practice a theme shows a brief "packaging..."
-state after the call resolves; the built-in Package dialog behaves the same way.
-Requires `"min_gd_version": "1.0.19"`.
+right away (it does not wait for the archives to finish). Follow progress on the
+`download:packaging` socket event with `__GD__.events.on("download:packaging", cb)`
+- the payload carries `{ id, status: "packaging" | "completed" | "failed", done,
+total }`. That event is exposed to plugins since GD **1.0.24**; on older cores it
+is not in the plugin event whitelist, so feature-detect (or just show a brief
+"packaging..." state after the call resolves, like the built-in Package dialog).
+The `package()` API itself requires `"min_gd_version": "1.0.19"`.
 
 #### GOG library sync and clearing metadata (v1.0.23)
 
@@ -792,6 +792,7 @@ const off = window.__GD__.events.on('upload:url_progress', (data) => { ... });
 |-------|-------|
 | `torrent:download_progress` / `_complete` / `_error` | torrent-based game downloads |
 | `upload:url_progress` / `_complete` / `_error` | server-side URL uploads |
+| `download:packaging` (v1.0.24) | file-packaging jobs from `__GD__.library.package()` - `{ id, status, done, total }` |
 
 ### Emulation data for theme pages - v1.0.15
 
