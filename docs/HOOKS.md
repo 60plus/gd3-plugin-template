@@ -619,6 +619,46 @@ Packaging runs in the background; progress streams over the `download:packaging`
 socket event (subscribe with `window.__GD__.events.on(...)`). Requires
 `"min_gd_version": "1.0.19"`.
 
+#### GOG library sync and clearing metadata (v1.0.23)
+
+The GOG library is not folder-scanned like custom libraries; it syncs from the
+connected GOG account and adopts already-downloaded games. A theme can drive the
+GOG library toolbar (start a sync, clear its scraped metadata) through this API
+instead of hand-rolling the `/gog/library/*` endpoints, and can clear a single
+game's metadata from any library. All four are admin-only.
+
+```javascript
+const lib = window.__GD__.library;
+
+// Start a GOG sync: pull the connected account, adopt already-downloaded games,
+// and (unless disabled) scrape metadata. Runs server-side; poll for progress.
+await lib.gogSync({ autoScrape: true, forceRescrape: false });
+
+let s = await lib.gogSyncStatus();   // { running, phase, synced, adopted, error }
+while (s.running) {
+  // update your UI from s.phase ("adopt" | "scrape"), s.synced, s.adopted
+  s = await lib.gogSyncStatus();
+}
+
+// Clear ALL scraped metadata from the GOG library (the games stay)
+await lib.gogClearMetadata();
+
+// Clear ONE game's scraped metadata so it can be re-scraped from scratch.
+// kind is "games" (Games / custom library), "gog", or "rom".
+await lib.clearGameMetadata("games", game.id);
+```
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `gogSync` | `({ autoScrape?, forceRescrape? })` | `void` | Pull the connected GOG account, adopt already-downloaded games, and (unless `autoScrape: false`) scrape metadata. `forceRescrape: true` re-scrapes games that already have metadata. Runs server-side; poll `gogSyncStatus()`. Admin-only. |
+| `gogSyncStatus` | `()` | `{ running, phase, synced, adopted, error }` | Current (or last) sync state. `phase` is `"adopt"` or `"scrape"`. Poll while `running` is true. |
+| `gogClearMetadata` | `()` | `void` | Remove all scraped metadata from the GOG library (keeps the games). Admin-only. |
+| `clearGameMetadata` | `(kind, id)` | `void` | Clear a single game's scraped metadata (title, source and files are kept) so it can be re-scraped. `kind` is `"games"`, `"gog"` or `"rom"`; the endpoint differs per source, so the API dispatches to the right route. Admin-only. |
+
+Requires `"min_gd_version": "1.0.23"`. Feature-detect
+(`typeof lib.gogSync === "function"`) if you want a lower minimum and hide these
+controls on older cores.
+
 ### Shared utilities - `window.__GD__.utils` (v1.0.12)
 
 Helpers the built-in themes use, exposed so plugins produce identical output
