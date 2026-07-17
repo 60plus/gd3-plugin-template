@@ -763,19 +763,103 @@ cores.
 
 ### Theme home sections (`__GD__.homeSections`) - v1.0.15
 
-A theme layout with its own extra home-page sections (trailer shelf, genre
-tiles, ...) registers them on mount; Settings -> Libraries then offers
-per-user on/off toggles for them automatically:
+A theme layout with its own home-page sections (a trailer shelf, genre tiles, or
+the built-in "Continue playing" / "Recently played" rails) registers them so
+Settings -> Libraries can offer per-user on/off toggles **and reorder arrows**
+for them automatically.
+
+Register from a **layout**, not a page view: the layout outlives navigation, so
+the section list stays registered while the user is on Settings looking at it.
+Register on mount and call the returned unregister on unmount.
 
 ```javascript
-const un = window.__GD__.homeSections.register([
-  { id: 'trailers', label: 'vp.sec_trailers' },   // label may be an i18n key
-  { id: 'genres',   label: 'vp.sec_genres' },
-]);
-onUnmounted(un);                                   // unregister on unmount
+import { onMounted, onUnmounted } from 'vue';
 
-// While rendering, skip switched-off sections and re-read on gd-theme-updated:
-if (!window.__GD__.homeSections.isHidden('trailers')) { /* render it */ }
+let un = null;
+onMounted(() => {
+  un = window.__GD__.homeSections.register([
+    { id: 'continue_playing', label: 'dashboard.continue_playing' },
+    { id: 'recently_played',  label: 'dashboard.recently_played' },
+    // Pin a section to a fixed spot: hide its reorder arrows.
+    { id: 'hero', label: 'vp.sec_hero', orderable: false },
+    // A section with its own per-user switch, on until the user touches it.
+    { id: 'trailers', label: 'vp.sec_trailers',
+      options: [{ id: 'autoplay', label: 'vp.autoplay', default: true }] },
+  ]);
+});
+onUnmounted(() => un && un());
+```
+
+Section fields: `id` (stable id, also the per-user setting key), `label` (an
+i18n key or a literal), `orderable` (default `true`; set `false` when the theme
+lays the section out at a fixed spot and does not route it through `order()`, so
+Settings shows the checkbox but no arrows), and `options[]` (per-section
+switches `{ id, label, default? }` shown beside the section in Settings).
+
+Read the choices back and re-read on the `gd-theme-updated` DOM event (fired on
+any toggle or reorder) so the home page reacts live:
+
+```javascript
+const hs = window.__GD__.homeSections;
+
+// Lay sections out in the user's chosen order (unmoved ids keep your order):
+for (const id of hs.order(['continue_playing', 'recently_played'])) {
+  if (hs.isHidden(id)) continue;                 // user switched this rail off
+  renderRail(id);
+}
+
+// A per-section switch. The `default` declared in register() is the source of
+// truth until the user toggles it, so pass the same default (or omit it):
+if (hs.isOptionOn('trailers', 'autoplay', true)) startAutoplay();
+```
+
+Methods: `register(sections)` -> `unregister()`, `list()` (the active theme's
+sections; reactive, used by Settings), `isHidden(id)`, `order(ids)` (ids sorted
+into the user's chosen order), and `isOptionOn(sectionId, optId, default?)`. The
+`orderable` field and the per-option `default` (source of truth for
+`isOptionOn`) were added in 1.0.25.
+
+### Dashboard and saves (`__GD__.dashboard`) - v1.0.25
+
+A theme that renders its own dashboard, save manager, or request queue reads and
+writes through `window.__GD__.dashboard`. Every call is scoped and gated on the
+server exactly like the built-in screen, so calling these directly cannot widen
+access - the admin-only calls return `403` for a non-admin.
+
+```javascript
+const dash = window.__GD__.dashboard;
+
+// Overview data (see the Dashboard wiki page for the payload shapes):
+const mine  = await dash.me({ days: 7 });            // the caller's own stats
+const admin = await dash.admin({ days: 30 });        // admin only
+const q     = await dash.queue();                    // admin: live transfer snapshot
+
+// Live feed (admin only). Each returns an unsubscribe function - call it on unmount.
+const offQ = dash.onQueue((q) => renderQueue(q));    // dashboard:queue pushes
+const offH = dash.onHealth((h) => renderHealth(h));  // dashboard:health heartbeat
+
+const who = await dash.gameDownloaders(gameId);      // admin: who downloaded a game
+```
+
+`me(params)` accepts `{ days }` (1 / 7 / 30) or `{ start, end }`, plus an optional
+`sections` array (`downloads`, `continue_playing`, `recently_played`, `requests`)
+so you compute only what you render.
+
+Save management (the caller's own saves) and the request queue live on the same
+object:
+
+```javascript
+const s = await dash.saves();                        // your states + battery saves + quota
+await dash.exportSaves();                            // download a full backup zip
+await dash.exportSaves(romId);                       // just one game's saves
+await dash.importSaves(file);                        // restore from a gd-saves zip
+await dash.exportSaveState(id);                      // one save as a zip
+await dash.deleteSaveState(id);
+await dash.deleteBatterySave(id);
+
+const reqs = await dash.requests();                  // requests (admin: all; user: own)
+await dash.setRequestStatus(id, { status: 'approved' });  // admin
+await dash.deleteRequest(id);                        // admin
 ```
 
 ### Server progress events (`__GD__.events`) - v1.0.15
