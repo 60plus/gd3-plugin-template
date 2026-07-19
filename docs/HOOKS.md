@@ -320,11 +320,24 @@ window.__GD__ = {
         addByUpload({ library, title, file, os, fileType, onProgress }),  // create + upload
     },
 
-    // Theme-declared home sections (v1.0.15) - see "Theme home sections" below
+    // Theme-declared home sections (v1.0.15; writes v1.0.26) - see "Theme home sections" below
     homeSections: {
-        register(sections),  // register([{id, label}]) -> unregister()
-        list(),              // the active theme's registered sections
-        isHidden(id),        // has the user switched this section off?
+        register(sections),           // register([{id, label}]) -> unregister()
+        list(),                       // the active theme's registered sections
+        isHidden(id),                 // has the user switched this section off?
+        order(ids),                   // ids sorted into the user's chosen order
+        isOptionOn(sectionId, optId, default?),  // a per-section switch
+        setOrder(ids),                // persist the order the user arranged
+        setHidden(id, hidden),        // show or hide one section (idempotent)
+        toggle(id),                   // flip one section's visibility
+        setOption(sectionId, optId, on),  // set a per-section switch
+        reset(),                      // drop this theme's layout, back to register()
+    },
+
+    // Settings blocks the theme edits itself (v1.0.26) - see "Owning a Settings block" below
+    managedSettings: {
+        register(keys),  // register(["homeSections", ...]) -> unclaim()
+        isManaged(key),  // does the active theme edit this setting itself?
     },
 
     // Shared editors and styled dialogs - see "Shared editors and dialogs" below
@@ -401,6 +414,10 @@ const libs = window.__GD__.stores.libraries();
 
 `route`, `label` and `slugForPath` accept either a slug string or a `LibraryInfo`.
 
+`isHidden` is the read side of the per-user library visibility Settings offers; a
+theme that draws its own control for it must claim `"libraryVisibility"` (see
+**Owning a Settings block** below).
+
 **`LibraryInfo`:**
 ```typescript
 { slug, name, kind, icon, color, enabled, sort_order, is_builtin, storage_folder }
@@ -417,7 +434,11 @@ home page. Drive your home feed from it:
 const recent = window.__GD__.recentLibraries;
 recent.isEnabled('games');   // show a recently-added row for this library?
 recent.get();                // resolved list of slugs to show (visible, non-couch)
+recent.set(['games','gog']); // persist the per-theme selection
 ```
+
+A theme that offers its own picker for this must claim `"recentLibraries"` (see
+**Owning a Settings block** below), or the same switch ends up in two places.
 
 #### Library icons - `window.__GD__.icons`
 
@@ -764,13 +785,18 @@ cores.
 ### Theme home sections (`__GD__.homeSections`) - v1.0.15
 
 A theme layout with its own home-page sections (a trailer shelf, genre tiles, or
-the built-in "Continue playing" / "Recently played" rails) registers them so
-Settings -> Libraries can offer per-user on/off toggles **and reorder arrows**
-for them automatically.
+the built-in "Continue playing" / "Recently played" rails) registers them to
+declare what the user is allowed to arrange. By default Settings -> Libraries
+then offers per-user on/off toggles **and reorder arrows** for them
+automatically. A theme that ships its own on-page editor claims the block
+instead (see **Owning a Settings block** below), and Settings draws nothing for
+it - the setting is the same either way, only the surface differs.
 
 Register from a **layout**, not a page view: the layout outlives navigation, so
-the section list stays registered while the user is on Settings looking at it.
-Register on mount and call the returned unregister on unmount.
+the section list stays registered wherever the controls are drawn - Settings on
+another route, or your own editor after the user has navigated away from the
+page that renders the sections. Register on mount and call the returned
+unregister on unmount.
 
 ```javascript
 import { onMounted, onUnmounted } from 'vue';
@@ -793,11 +819,17 @@ onUnmounted(() => un && un());
 Section fields: `id` (stable id, also the per-user setting key), `label` (an
 i18n key or a literal), `orderable` (default `true`; set `false` when the theme
 lays the section out at a fixed spot and does not route it through `order()`, so
-Settings shows the checkbox but no arrows), and `options[]` (per-section
-switches `{ id, label, default? }` shown beside the section in Settings).
+the section may be switched off but not moved), and `options[]` (per-section
+switches `{ id, label, default? }` the user flips independently of the section's
+own on/off). `orderable` and `options[]` are declarations rather than drawing
+instructions: Settings honours them when it renders the block, and a theme that
+has claimed
+`homeSections` must honour them in its own editor - `orderable: false` means no
+reorder control for that section, wherever the control lives.
 
 Read the choices back and re-read on the `gd-theme-updated` DOM event (fired on
-any toggle or reorder) so the home page reacts live:
+any toggle or reorder, whether it came from Settings or from the theme's own
+editor) so the home page reacts live:
 
 ```javascript
 const hs = window.__GD__.homeSections;
@@ -813,11 +845,120 @@ for (const id of hs.order(['continue_playing', 'recently_played'])) {
 if (hs.isOptionOn('trailers', 'autoplay', true)) startAutoplay();
 ```
 
+The writes below fire that same event, so your own editor re-renders through the
+identical path - snapshot into a local `ref` and refresh on the event plus a
+light poll, exactly as in **Reactivity (compiled Vue themes)** above, rather
+than hand-rolling a refresh after each write.
+
+#### Arranging sections on the page - the write API (v1.0.26)
+
+A theme can let the user arrange the home page in place - drag a shelf, hide
+one, flip a switch - instead of sending them to Settings. These five writes
+persist exactly what Settings persists, so the two surfaces remain one setting.
+Pair them with `managedSettings.register(["homeSections"])` (see **Owning a
+Settings block** below) so the same controls are not offered twice.
+
+```javascript
+const hs = window.__GD__.homeSections;
+
+// Persist the order the user arranged.
+hs.setOrder(['hero', 'recent', 'trailers']);
+
+// Explicit show/hide - the right call for an editor that re-applies its whole
+// state, because writing the value a section already holds is skipped.
+hs.setHidden('trailers', true);
+
+// Flip one section (always writes).
+hs.toggle('trailers');
+
+// A per-section switch declared in register()'s `options`.
+hs.setOption('recent', 'flip', true);
+
+// "Reset layout": drop order, hidden and options for this theme in one write.
+hs.reset();
+```
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `setOrder` | `(ids)` | `void` | Persists the arranged order (the array is copied). Ids you leave out keep the theme's own order, at the end - which is why a section that appears at runtime (a new collection, a library just created) shows up without invalidating a saved layout. Read back with `order(ids)`. |
+| `setHidden` | `(id, hidden)` | `void` | Explicit show/hide. **Idempotent**: writing the value already held is skipped entirely - no save, no event - so an editor may cheaply re-apply its whole state. Read back with `isHidden(id)`. |
+| `toggle` | `(id)` | `void` | Flips one section's visibility. Always writes, unlike `setHidden`. |
+| `setOption` | `(sectionId, optId, on)` | `void` | Sets one of the switches declared in `options[]`. An option the user never touched stays **absent** rather than being written as `false`, which is what preserves the `default` fallback in `isOptionOn`. Always writes. |
+| `reset` | `()` | `void` | Drops this user's whole layout for the ACTIVE theme - order, hidden and options - in a single write (one event, one save), falling back to what `register()` declared. The theme's other settings (skin, cover size, the recently-added choice, your own setting keys) are left intact. |
+
+Every write persists per-user **and per-theme**, fires `gd-theme-updated`, and
+schedules a debounced (1.2 s) save to the server - so a layout the user arranges
+in one browser follows them to another. Because the event fires on your own
+writes too, guard the expensive half of your handler while the editor is open:
+Vapor re-reads its section state on every event but skips refetching its rails
+while arrange mode is on, so a drag does not put two requests behind every
+gesture.
+
+No id is validated anywhere. An unknown id is stored verbatim and simply never
+matches a registered section, so a typo costs a dead entry in the user's
+settings rather than an error.
+
 Methods: `register(sections)` -> `unregister()`, `list()` (the active theme's
-sections; reactive, used by Settings), `isHidden(id)`, `order(ids)` (ids sorted
-into the user's chosen order), and `isOptionOn(sectionId, optId, default?)`. The
-`orderable` field and the per-option `default` (source of truth for
-`isOptionOn`) were added in 1.0.25.
+sections; reactive - what Settings renders its block from, unless the theme has
+claimed `homeSections`), `isHidden(id)`, `order(ids)` (ids sorted into the
+user's chosen order), and `isOptionOn(sectionId, optId, default?)`, plus the
+five writes above. The `orderable` field and the per-option `default` (source of
+truth for `isOptionOn`) were added in 1.0.25; `setOrder`, `setHidden`, `toggle`,
+`setOption` and `reset` were added in 1.0.26.
+
+The writes and `managedSettings` are v1.0.26+, so a theme with an on-page editor
+must set `"min_gd_version": "1.0.26"` in `plugin.json` (the store install gate
+enforces it). If you prefer to keep a lower minimum, feature-detect instead
+(`typeof hs.setOrder === "function"`, `!!window.__GD__.managedSettings`) and hide
+the editor on older cores. Every call site optional-chains, so an editor left
+enabled on 1.0.25 fails silently - it renders and responds while nothing
+persists, and Settings goes on drawing its own block underneath.
+
+### Owning a Settings block (`__GD__.managedSettings`) - v1.0.26
+
+A theme that ships its own on-page editor for a setting **claims** it, and core
+Settings stops drawing its controls for it. Without this the same switches live
+in two places and quietly drift apart, leaving the user to work out which one
+actually applies.
+
+```javascript
+import { onMounted, onUnmounted } from 'vue';
+
+let unclaim = null;
+onMounted(() => {
+  // Vapor claims exactly this one: its home page arranges sections itself, and
+  // deliberately leaves the other two blocks to Settings.
+  unclaim = window.__GD__.managedSettings?.register?.(["homeSections"]) || null;
+});
+onUnmounted(() => { unclaim && unclaim(); unclaim = null; });
+```
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `register` | `(keys)` | `unclaim()` | Claims the listed blocks for this theme. Keys already claimed are skipped, so the registry never holds duplicates. |
+| `isManaged` | `(key)` | `boolean` | Is this block handled by the active theme? Reactive - usable directly in a `v-if`. |
+
+The three keys, all of them blocks of Settings -> Libraries:
+
+| Key | What Settings stops drawing |
+|-----|-----------------------------|
+| `"libraryVisibility"` | The per-user library on/off list (the write side of `stores.libraries().isHidden`). |
+| `"recentLibraries"` | The picker for which libraries feed a "recently added" row - see **Recently-added rows** above. Its pre-existing condition still applies as well: the block never appears for the Classic layout. |
+| `"homeSections"` | The theme home-section list with its visibility toggles, reorder arrows and per-section option switches. Its pre-existing condition still applies: the block only ever appears when the theme registered sections. |
+
+**Claiming a key obliges you to replace it.** Settings draws nothing at all for
+a claimed block, so a theme that claims `"homeSections"` without shipping an
+editor takes the controls away and puts nothing in their place.
+
+The registry is module-level and in-memory: it is not persisted, it is gone on
+reload, and it is **not** cleared when the user switches theme. The theme owns
+the unclaim - call it on unmount, the same mount/unmount discipline as
+`homeSections.register`. The returned function removes only the keys that call
+actually added, so registering a key something else already claimed hands back a
+no-op unclaim and cannot strip the other claim.
+
+Only the three keys above are honoured. The runtime accepts any string, so a key
+outside the list is stored and then nothing ever reads it.
 
 ### Dashboard and saves (`__GD__.dashboard`) - v1.0.25
 
@@ -1045,6 +1186,14 @@ For plugins that fetch game metadata from external sources. These hooks work acr
 | `metadata_get_logos(query)` | `list[dict]` | Clear logo / wheel images |
 | `metadata_search_collection(query)` | `list[dict]` | Search collections / franchises / series by name (v1.0.12) |
 | `metadata_get_collection(provider_collection_id)` | `dict or None` | Full metadata for one collection (v1.0.12) |
+
+Since v1.0.26, `metadata_provider_name()` is also what LABELS your ratings in
+the UI. A rating you supply is matched back to your plugin by
+`metadata_provider_id()` and labelled with the name this hook returns,
+everywhere it is shown: the ROM and game detail pages and both metadata
+editors. Return it in presentation form ("PPE.pl") - it is used exactly as
+given. Implement it: without the hook the label falls back to your provider id
+in capitals.
 
 ### metadata_provider_ratings - v1.0.15
 
