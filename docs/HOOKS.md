@@ -1440,6 +1440,23 @@ the id and name.
 Downloaded games show in the **Games** library; only their *files* live under
 `storage_folder` (e.g. `data/games/PC Ports/<title>/<os>/`).
 
+### The store lifecycle
+
+The store is created by the catalogue's first sync, so until then there is no
+store page to open. That first sync is run from the plugin's configuration panel
+in **Settings > Plugins** (its **Sync catalogue** button), which is where the
+plugin's token or other config is entered; once the store exists, its own page
+can sync too.
+
+The store belongs to the plugin. Uninstalling the plugin deletes the store and
+its listings, while every game already downloaded from it stays in the Games
+library with its files and metadata. Disabling the plugin keeps the store.
+Reinstalling and syncing rebuilds the store and re-links the fresh listings to
+the games downloaded earlier, matched by the origin recorded on each game, so a
+game already on the server is marked owned rather than offered again and each
+listing regains the cover and metadata its game holds. This is why `external_id`
+must be stable: it is the identity a re-link keys on.
+
 ### The entry dict (`library_catalog_fetch`)
 
 | Key | Type | Notes |
