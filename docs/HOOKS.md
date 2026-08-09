@@ -685,6 +685,59 @@ Requires `"min_gd_version": "1.0.23"`. Feature-detect
 (`typeof lib.gogSync === "function"`) if you want a lower minimum and hide these
 controls on older cores.
 
+### Storefront catalogues - `window.__GD__.catalog` (v1.0.27)
+
+A store library (`is_store`, fed by a `LibraryCatalogSpec` plugin - see that
+spec) is not an ordinary library: its shelf is the *catalogue*, and a game exists
+only once somebody pulls a build. A theme that renders a store library with the
+normal library data shows only the handful already downloaded and offers no way
+to reach the catalogue - which is how the store worked in one theme out of four
+before this API. Bring your own shelf layout and call `__GD__.catalog` for the
+data.
+
+```js
+// A store library carries a catalog_id; that string is the catalogue key.
+const stores = __GD__.stores.libraries().filter(l => l.is_store && l.catalog_id)
+const catalogId = stores[0].catalog_id
+
+const entries = await __GD__.catalog.listEntries(catalogId)   // the whole shelf
+const entry   = await __GD__.catalog.getEntry(entryId)        // one, with detail
+await __GD__.catalog.download(entryId, { assets: ['Game-win64.zip'] })
+await __GD__.catalog.sync(catalogId)            // admin: re-read from source
+await __GD__.catalog.clearMetadata(catalogId)   // admin: wipe scraped metadata
+const all = await __GD__.catalog.listCatalogs() // every registered catalogue
+```
+
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `listEntries(catalogId)` | `CatalogEntry[]` | Everything the catalogue offers |
+| `countEntries(catalogId)` | `number` | How many entries the catalogue holds, without fetching them - for a card that shows only the count |
+| `getEntry(entryId)` | `CatalogEntry` | One entry with full detail |
+| `download(entryId, {assets?})` | `object` | Turn the offer into a game and pull builds; omit `assets` for the entry's default |
+| `sync(catalogId)` | `object` | Admin only, server-side; re-read the catalogue |
+| `clearMetadata(catalogId)` | `{cleared}` | Admin only; reset every listing's scraped metadata |
+| `listCatalogs()` | `object[]` | Every catalogue the installed plugins registered |
+
+A `CatalogEntry` carries the same presentation a GOG game does, so a store tile
+reads like a library tile: `id`, `title`, `subtitle`, `cover_path` (falls back to
+the square `icon_path`), `background_path`, `logo_path`, `description`,
+`developer`, `publisher`, `release_date`, `rating` (0-5), `genres`,
+`screenshots`, `meta_ratings`, plus the store-specific fields:
+
+| Field | Meaning |
+|-------|---------|
+| `downloaded` | `true` once a build has been pulled - the offer is now a game. Render an "owned" badge and route to the game. |
+| `library_game_id` | The game it became (`null` until downloaded). Open a downloaded entry at the game's own detail route, not the store's. |
+| `assets` | The builds on offer (`[{name, os, size, url}]`), for a download picker. Pass the chosen names to `download()`; the built-in themes share a `CatalogDownloadDialog.vue` you can copy, but nothing stops a theme building its own. |
+| `available` / `unavailable_reason` | A listing the catalogue can no longer offer, and why. |
+
+Open an *offer* (not yet a game) at the store's entry route,
+`/lib/{storeSlug}/entry/{entryId}`. See `CatalogStoreView.vue` (Modern/Classic)
+and `NeonHorizonStore.vue` for a full store view built entirely on this API.
+
+Requires `"min_gd_version": "1.0.27"`. Feature-detect
+(`typeof __GD__.catalog?.listEntries === "function"`) for a lower minimum.
+
 ### Shared utilities - `window.__GD__.utils` (v1.0.12)
 
 Helpers the built-in themes use, exposed so plugins produce identical output
@@ -1341,6 +1394,119 @@ For plugins that scan game libraries from various sources.
 
 Registered sources are listed at `GET /api/plugins/library/sources` and scanned
 via `POST /api/plugins/library/sources/{id}/scan`.
+
+---
+
+## LibraryCatalogSpec
+
+For plugins that publish a **catalogue**: a listing of games the server *could*
+hold, rather than files it already has. A `LibrarySourceSpec` scans a path for
+what is here; a catalogue describes what is available elsewhere, so the library
+it feeds is a **storefront** (the `is_store` flag) instead of a shelf. GOG is the
+built-in example; this spec lets a plugin add others - the PC Ports catalogue is
+one.
+
+The plugin only *describes*. Core owns every write: it upserts the entries,
+downloads artwork through the SSRF guard and serves it locally, creates the store
+library, and decides membership - so a catalogue cannot hot-link a CDN image into
+the UI or push a row past the guards. An admin cannot hand-make a store either; a
+store is the plugin's to create.
+
+| Hook | Returns | Description |
+|------|---------|-------------|
+| `library_catalog_id()` | `str` | Stable key for this catalogue in the database |
+| `library_catalog_name()` | `str` | Display name (e.g. "GitHub PC Ports") |
+| `library_catalog_library()` | `dict` | Optional store-library declaration (see below) |
+| `library_catalog_fetch()` | `list[dict]` | The whole catalogue, one dict per entry |
+
+`library_catalog_fetch` runs in a worker thread, so blocking HTTP is fine and
+expected. Report a dead source per entry (`available: false`) rather than
+raising - one gone repository must not cost the other seventy-six.
+
+### The store-library declaration (`library_catalog_library`)
+
+Optional. Core upserts a library from what you return and marks it a store fed by
+this catalogue. Any key may be omitted; return nothing to take every default from
+the id and name.
+
+| Key | Type | Default | Notes |
+|-----|------|---------|-------|
+| `slug` | `str` | from the id | Stable route slug |
+| `name` | `str` | the catalogue name | Display name |
+| `icon` | `str` | - | Icon path or URL |
+| `color` | `str` | - | Accent colour |
+| `storage_folder` | `str` | the name | Folder under `data/games` for downloaded builds |
+
+Downloaded games show in the **Games** library; only their *files* live under
+`storage_folder` (e.g. `data/games/PC Ports/<title>/<os>/`).
+
+### The entry dict (`library_catalog_fetch`)
+
+| Key | Type | Notes |
+|-----|------|-------|
+| `external_id` | `str` | **Required.** Stable identity inside this catalogue, and the key entries are matched on across syncs. Use something that survives a rename - a repository path, not a title. |
+| `title` | `str` | **Required.** Display name. For a port this is the *game*, not the project: people look for "Mario Kart 64", not "SpaghettiKart". |
+| `subtitle` | `str` | Qualifier shown under the title. What tells two builds of one game apart. |
+| `catalog_title` | `str` | The name before any parsing; kept as a fallback for metadata lookups. |
+| `category` | `str` | Optional grouping; stored as a tag. |
+| `icon_url` | `str` | Artwork URL. Core downloads it locally. |
+| `description` | `str` | Optional summary. |
+| `homepage` | `str` | Optional link shown on the detail page. |
+| `available` | `bool` | `false` when the entry cannot be offered now (repository gone, no usable release). |
+| `unavailable_reason` | `str` | Why, shown to the admin. Required when `available` is `false`. |
+| `release` | `dict` | Omitted when nothing is downloadable yet - see below. |
+
+`release`:
+
+| Key | Type | Notes |
+|-----|------|-------|
+| `tag` | `str` | The build's own name - a release tag, not an invented version. |
+| `published_at` | ISO-8601 `str` | |
+| `prerelease` | `bool` | |
+| `assets` | `list[dict]` | Each: `name`, `size` (int bytes), `url`, `os` (`windows`\|`mac`\|`linux`\|`all`), optional `arch` (free-form), optional `digest` (checksum). |
+
+An entry missing `external_id` or `title` is skipped and logged, never guessed
+at. A duplicate `external_id` in one fetch keeps the first and logs the rest.
+
+### The lifecycle of an entry (the GOG shape)
+
+1. **Sync** (`POST /api/plugins/library/catalogs/{id}/sync`, admin) calls
+   `library_catalog_fetch` and reconciles it into the store: new entries are
+   inserted, changed ones updated, and an entry the catalogue stopped offering is
+   marked unavailable - **never deleted**, because an admin may have downloaded it
+   and its row is the only record of where it came from. A sync creates
+   `catalog_entries` only; it does **not** create games.
+2. **Download** (`POST /api/plugins/library/catalog-entries/{id}/download`, body
+   `{assets?: [name, ...]}`) turns one listing into a real `LibraryGame` in the
+   Games library, copies the scraped presentation onto it, then pulls the selected
+   builds through the shared URL path (the SSRF guard, size ceiling and virus scan
+   all apply). The entry's `library_game_id` is set and `downloaded` becomes
+   `true`. Before this, the entry is not a game - invisible to users, never
+   counted anywhere.
+3. **The store stays the source of truth.** A metadata edit or re-scrape on the
+   listing is pushed onto the downloaded game (description, art, rating, genres,
+   screenshots, ...), so the two never drift. Title, subtitle and category are
+   left alone on purpose: the sync stamps those from upstream every run, and
+   pushing them would undo an admin's rename of the game.
+
+### Endpoints
+
+| Method + path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /api/plugins/library/catalogs` | read | Every catalogue the loaded plugins offer |
+| `GET /api/plugins/library/catalogs/{id}/entries` | read | Every listing in one catalogue |
+| `GET /api/plugins/library/catalogs/{id}/entries/count` | read | Just the entry count, without the listings |
+| `GET /api/plugins/library/catalog-entries/{id}` | read | One listing, with detail |
+| `POST /api/plugins/library/catalogs/{id}/sync` | admin | Re-read the catalogue from its source |
+| `POST /api/plugins/library/catalog-entries/{id}/download` | upload | Turn a listing into a game and pull builds |
+| `POST /api/plugins/library/catalogs/{id}/clear-metadata` | admin | Reset every listing's scraped metadata in the store |
+| `POST /api/plugins/library/catalogs/{id}/scrape-metadata` | admin | (Re)scrape every listing |
+| `POST /api/plugins/library/catalog-entries/{id}/scrape-metadata` | admin | (Re)scrape one listing |
+| `PATCH /api/plugins/library/catalog-entries/{id}` | admin | Edit one listing (the metadata editor's Save) |
+| `GET /api/plugins/library/catalog-entries/{id}/covers` \| `/screenshots` \| `/meta-sources` | admin | Editor pickers |
+
+A theme does not call these directly - it uses `window.__GD__.catalog` (below),
+which owns the read / sync / download shapes once for every theme.
 
 ---
 
