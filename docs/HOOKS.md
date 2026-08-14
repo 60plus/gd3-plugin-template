@@ -738,6 +738,96 @@ and `NeonHorizonStore.vue` for a full store view built entirely on this API.
 Requires `"min_gd_version": "1.0.27"`. Feature-detect
 (`typeof __GD__.catalog?.listEntries === "function"`) for a lower minimum.
 
+### ROM sources - `window.__GD__.romSources` (v1.0.29)
+
+A ROM source is a remote catalogue of ROMs a `RomSourceSpec` plugin describes
+(see that spec). It is not a storefront: nothing is pre-synced, because a source
+can stand in front of tens of thousands of ROMs. A theme asks for the sources,
+drills into a platform, lists ROMs a page at a time and asks for a download; core
+owns the fetch, the write into `roms/<fs_slug>/` and the scan plus scrape that
+follow. Every endpoint behind this API is admin-only (`LIBRARY_ADMIN`), so gate
+the entry point on the same thing.
+
+```js
+const sources = await __GD__.romSources.list()
+const src = sources[0]
+if (src.requires_auth && src.configured === false) {
+  /* send the user to the plugin's settings; listing would 409 */
+}
+
+const plats = await __GD__.romSources.platforms(src.id)
+const page  = await __GD__.romSources.listRoms(src.id, 'snes', {
+  page: 1, pageSize: 60, query: 'mario', region: 'USA',
+  collection: 'No-Intro (2025)', format: 'zip', kind: 'retail',
+})
+await __GD__.romSources.download(src.id, [page.items[0].id])
+```
+
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `list()` | `RomSource[]` | Every source the installed plugins registered |
+| `platforms(sourceId)` | `RomSourcePlatform[]` | Already filtered to slugs GD knows |
+| `listRoms(sourceId, fsSlug, opts)` | `RomSourceListing` | One live page; see the options below |
+| `download(sourceId, ids, {force?})` | `{queued, skipped}` | One id or many. `force` re-downloads over a file that is already there |
+| `previewEntry(fsSlug, entry)` | `RomSourcePreview` | Cover and facts for ONE row the user asked about |
+| `previewKey(fsSlug, entry)` | `string` | Cache key for the above, keyed on the game |
+| `route(sourceId, fsSlug?)` | `string` | Canonical in-app route, so the URL layout stays the core's |
+| `platformArt(fsSlug)` | `{icon, name, fanart}` | The same console art the Retro grid uses |
+| `__GD__.roms.import(url, fsSlug, filename)` | `object` | General primitive: pull one ROM by URL, no adapter needed |
+
+A `RomSource` carries `id`, `name`, `plugin_id`, `plugin_name`, `icon`,
+`tile_bg`, `requires_auth` and `configured`. Head the view with `plugin_name`
+and `icon` (the owning plugin's identity) and keep `name` as the catalogue
+detail; `tile_bg` is the source's own tile art. When `requires_auth` is `true`
+AND `configured` is `false`, listing is refused server-side with a 409, so gate
+on the pair and render a "configure to enable" state instead of an empty grid.
+
+An entry in `listing.items` carries `id`, `title`, `filename`, `region`, `size`,
+`collection`, `format`, `kind`, `crc` / `md5` / `sha1` and `owned`. Two of those
+are worth spelling out:
+
+- `title` and `filename` are deliberately different. Arcade sets are named after
+  the emulator (`mslug.zip`) and must keep that name on disk, so a source may
+  resolve a real title for display while the file stays as it was.
+- `owned` is decided by hash where the source published one, and by filename
+  where it did not. Hashes are absent for an entry that arrives inside an
+  archive, because there the source can only hash the wrapper.
+
+The listing echoes back the `page` it answered for, alongside `items` and
+`total`.
+
+The listing also returns `collections`, `formats` and `kinds`: every value
+available for that platform, whatever page was asked for. Use them as the
+filter's options and pass a chosen value back as `collection` / `format` /
+`kind`. A list with one entry or none has nothing to filter by, so hide the
+control rather than showing a menu of one.
+
+`previewEntry` costs a scraper call, so it is for a row the user pointed at, not
+for a listing. Cache on `previewKey`, which keys on the game rather than the row:
+"Sonic (USA)" and "Sonic (Europe)" collapse to one lookup. The preview always
+returns `found`, `query` and `source`; on a hit it also carries `matched_by`
+(`"hash"` or `"name"`), `name`, `summary`, `developer`, `publisher`, `genres`,
+`release_year` and `cover_url`. A miss carries those three keys alone, so read
+the rest behind `found`. The cover URL is already proxied, since a scraper URL
+carries the account in its query string - render it as given, never rebuild it.
+
+Downloads report over socket.io. Subscribe through `__GD__.events.on` and key on
+the job `id` that `download()` handed back:
+
+| Event | Payload |
+|-------|---------|
+| `romsource:download_progress` | `id`, `source_id`, `entry_id`, `fs_slug`, `filename`, `percent` (`-1` when the size is unknown), `received`, `total`, `speed` |
+| `romsource:download_complete` | the same identity fields plus `rom_id` |
+| `romsource:download_error` | the same identity fields plus `error` |
+
+A cold source can be slow: a set spread over dozens of upstream items has to be
+walked before the first page exists. `listRoms` therefore allows two minutes and
+`platforms` the same. Show a loading state rather than a spinner that looks
+stuck, and expect the second visit to be immediate.
+
+Requires `"min_gd_version": "1.0.29"`. Feature-detect
+(`typeof __GD__.romSources?.list === "function"`) for a lower minimum.
+
 ### Shared utilities - `window.__GD__.utils` (v1.0.12)
 
 Helpers the built-in themes use, exposed so plugins produce identical output
@@ -1524,6 +1614,119 @@ at. A duplicate `external_id` in one fetch keeps the first and logs the rest.
 
 A theme does not call these directly - it uses `window.__GD__.catalog` (below),
 which owns the read / sync / download shapes once for every theme.
+
+---
+
+## RomSourceSpec
+
+Manifest `"type": "rom_source"`. For a plugin that puts a remote catalogue of
+ROMs in front of the user and downloads single files from it into
+`roms/<fs_slug>/`, where the existing scan and scrape pipeline takes over.
+
+A ROM source is the opposite trade to a `LibraryCatalogSpec` storefront. A
+storefront is synced into the database and browsed from there, which works
+because it holds hundreds of listings. A source can stand in front of tens of
+thousands, so nothing is stored: the plugin lists on demand, a page at a time,
+and resolves one file when the user picks it. A downloaded ROM becomes an
+ordinary `Rom` row - a source never owns a shelf, and uninstalling the plugin
+takes nothing away.
+
+| Hook | Returns | Description |
+|------|---------|-------------|
+| `rom_source_id()` | `str` | Stable id, e.g. `"archive-hearto"` |
+| `rom_source_name()` | `str` | Display name of the catalogue |
+| `rom_source_meta()` | `dict` | Presentation and state; every key optional |
+| `rom_source_platforms()` | `list[dict]` | The platforms on offer |
+| `rom_source_list(fs_slug, page, page_size, query, region, sort, **filters)` | `dict` | One live page |
+| `rom_source_resolve_download(entry_id)` | `dict` | One entry to a concrete download |
+
+`rom_source_list` and `rom_source_resolve_download` are called in a worker
+thread, so blocking HTTP inside them is fine and expected.
+
+### Presentation (`rom_source_meta`)
+
+| Key | Meaning |
+|-----|---------|
+| `tile_asset` | Path under the plugin's `assets/` for the source's tile art, served through `/api/plugins/{id}/assets/{path}` |
+| `icon_asset` | Path for a small icon shown beside the source. Defaults to the plugin's own `logo.png` / `logo.svg`, so ship one and you can leave this out |
+| `requires_auth` | Whether the source needs credentials before it can list or download |
+| `configured` | Whether the plugin currently has what it needs. `False` together with `requires_auth` makes core show "configure to enable" and refuse listing |
+
+### Platforms
+
+One dict per platform: `fs_slug` (required), `display` and `count` (both
+optional). `fs_slug` must exist in GD's `PLATFORM_MAP`. Mapping the source's own
+platform naming onto that slug is the plugin's job, and an unmapped slug is
+dropped and logged rather than guessed into some folder - a ROM in the wrong
+folder scrapes as the wrong game and boots in the wrong emulator.
+
+### Listing
+
+Return `items`, `total`, and optionally `collections`, `formats` and `kinds`
+(every value available for the platform, whatever page was asked for - core
+hands them to the theme as the filter options).
+
+Each item: `id` (stable within this source, handed back to
+`rom_source_resolve_download`), `title`, `filename`, and optionally `region`,
+`size`, `crc`, `md5`, `sha1`, `collection`, `format`, `kind`.
+
+Four fields repay a second look:
+
+- **`title` and `filename` are separate on purpose.** The file has to keep the
+  name the emulator expects, but nothing stops the listing showing a real title
+  next to it. Core strips a region tag from `title` for display and shows the
+  region as a badge.
+- **`collection`** stamps an entry with the upstream set it came from, for a
+  source that merges several sets covering the same platform.
+- **`format`** is derived from the filename when omitted, so set it only when the
+  extension would lie.
+- **hashes** are what let core mark an entry as already owned *before* anything
+  is downloaded. Publish them only for a bare ROM. GD hashes the ROM inside an
+  archive, not the archive, so passing the wrapper's hash for a `.zip` compares
+  two different numbers and quietly breaks owned-detection.
+
+`sort` arrives as one of `name_asc`, `name_desc`, `size_desc`, `size_asc` (what
+the built-in ROM list offers) or `None`. **Core never re-orders the page it gets
+back**, so a value the plugin does not handle means the sort control silently
+does nothing.
+
+`collection`, `fmt` and `kind` arrive as filters, by keyword, and **only to a
+plugin whose signature names them**. The hook gained filters after its first
+release and will gain more; a plugin written against the older signature keeps
+being called exactly as it was written instead of erroring on an argument it
+never heard of. Declare the ones you support and ignore the rest.
+
+### Resolving a download
+
+Return `url` (the one ROM file, never a whole multi-GB archive), `filename`,
+`fs_slug`, and optionally `headers` and `cookies` carrying the source's auth.
+Core attaches them to a guarded download and never logs them.
+
+> Prefer `cookies` over a `Cookie` header. An HTTP client drops the `Cookie`
+> header when a redirect crosses hosts, which is exactly what archive.org does
+> when it hands a download to a datanode; a cookie jar survives it. A `Cookie`
+> header is accepted and folded into the jar for convenience.
+
+Credentials are the plugin's own business. Declare them in `config_schema` with
+`password`-type fields (those are redacted from non-admins), read them from the
+stored config, and return ready-to-use headers or cookies - the secret never
+leaves the backend and never reaches a browser.
+
+### Endpoints
+
+Every one of these is `LIBRARY_ADMIN`.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/rom-sources` | Every registered source |
+| `GET /api/rom-sources/{id}/platforms` | The platforms one source offers |
+| `GET /api/rom-sources/{id}/platforms/{fs_slug}/roms` | One live page (`page`, `page_size` max 200, `query`, `region`, `sort`, `collection`, `fmt`, `kind`) |
+| `GET /api/rom-sources/preview` | Cover and facts for one row (`fs_slug` plus `title` / `filename` / `size` / `crc` / `md5` / `sha1`) |
+| `POST /api/rom-sources/{id}/download` | Queue entries (`entry_ids`, `force`) |
+| `POST /api/rom-sources/import` | Pull one ROM by URL (`url`, `fs_slug`, `filename`, `force`) |
+
+A theme does not call these directly - it uses `window.__GD__.romSources`
+(above), which owns the list / preview / download shapes once for every theme.
 
 ---
 
