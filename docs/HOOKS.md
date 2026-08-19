@@ -1730,6 +1730,92 @@ A theme does not call these directly - it uses `window.__GD__.romSources`
 
 ---
 
+## FirmwareSourceSpec
+
+For a plugin that can fetch emulator firmware. No manifest `type` of its own and
+no dedicated plugin: every installed instance is asked, so a source, a metadata
+provider or a theme can add these hooks to what it already does.
+
+Firmware itself is core's business. The store, the upload from disk and the
+delivery into the running emulator all work with no plugin installed at all,
+because a ROM can be copied in by hand and a BIOS has to be no harder. What a
+plugin adds is the option to fetch a file the user would otherwise go hunting
+for.
+
+Core deliberately keeps the parts that must not be delegated. It decides which
+filenames a core actually asks for, refuses anything else, and performs the
+download itself behind the SSRF guard. A plugin hands over a URL and its own
+credentials, never bytes from wherever it pleases.
+
+| Hook | Returns | Description |
+|------|---------|-------------|
+| `firmware_source_name()` | `str` | Display name shown beside the offer, e.g. `"Internet Archive"` |
+| `firmware_offers(libretro_core, paths)` | `dict` | Which of `paths` this plugin could supply |
+| `firmware_resolve_download(libretro_core, path)` | `dict` | One file to a concrete download |
+
+Both working hooks are called in a worker thread, so blocking HTTP inside them
+is fine. `firmware_offers` runs whenever an administrator opens the firmware
+screen, so keep it cheap.
+
+### Cores are named the libretro way
+
+`libretro_core` is the **libretro** core name (`puae`, `mupen64plus_next`,
+`gambatte`), not the EmulatorJS one (`amiga`, `n64`, `gb`). That is how firmware
+is catalogued everywhere else in GD, and several EmulatorJS names share one
+core, so the libretro name is the only key that does not collide. Core does the
+translation before calling you; the HTTP endpoints below still speak the
+EmulatorJS name.
+
+### Offering
+
+`paths` holds only the files that are **missing on disk** for that core, so
+there is nothing to filter out on your side and no reason to answer about a file
+the user already has.
+
+Return a dict keyed by the path, each value a dict:
+
+| Key | Meaning |
+|-----|---------|
+| `label` | Optional. What the user is being offered, typically a set name |
+| `size` | Optional. Bytes, if known without fetching |
+| `md5` | Optional. Expected checksum, if the source publishes one |
+
+Leave out anything you cannot supply. **A path that was not asked for is dropped,
+not stored**: the same allow-list that guards uploads guards this, so a plugin
+cannot slip a file in under a name the emulator core never wanted. Where two
+plugins offer the same path the first one asked wins. A hook that raises, or
+returns something other than a dict, is logged and skipped without disturbing the
+other plugins or the screen.
+
+### Resolving
+
+Return `url` (that one file, direct), and optionally `headers` and `cookies`
+carrying the source's own auth. Core attaches them to a guarded download and
+never logs them. The first plugin to return a usable `url` wins.
+
+The stored name is validated against core's own registry regardless of what you
+return here. Credentials are your business, exactly as for a ROM source: declare
+them in `config_schema` as `password`-type fields, read them from the stored
+config, and hand back ready-to-use headers or cookies. The secret stays in the
+backend and never reaches a browser.
+
+> The redirect note from `RomSourceSpec` applies here too: prefer `cookies` over
+> a `Cookie` header, because an HTTP client drops that header when a redirect
+> crosses hosts.
+
+### Endpoints
+
+| Endpoint | Scope | Description |
+|----------|-------|-------------|
+| `GET /api/firmware/{ejs_core}/offers` | `LIBRARY_ADMIN` | What plugins say they could supply for the files still missing |
+| `POST /api/firmware/{ejs_core}/fetch` | `LIBRARY_ADMIN` | Fetch one offered file and store it |
+
+Both take the **EmulatorJS** core name in the path. An empty offers response is
+the ordinary answer when nothing is missing, when no plugin offers anything, and
+when no plugin is installed at all - the screen does not distinguish them.
+
+---
+
 ## LifecycleSpec
 
 For plugins that react to application events. `game` is a plain dict
