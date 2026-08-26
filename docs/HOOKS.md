@@ -1911,3 +1911,63 @@ def widget_get_cards(self):
         "subtitle": "things tracked", "icon": "mdi-chart-box", "link": "/x/my-page",
     }]
 ```
+
+---
+
+## Storing data
+
+Never write data next to your code. Installing a plugin replaces its directory
+whole - the old one is removed, the archive is copied in its place - so a cache
+kept beside `plugin.py` is destroyed by your own update, and the first thing
+your users see after every release is your plugin rebuilding everything it
+already knew.
+
+Ask for a directory instead. It is outside the tree the installer replaces, so
+it survives updates, and disabling and re-enabling the plugin. Requires
+GamesDownloader **1.0.32**, so set `"min_gd_version": "1.0.32"` in your
+manifest - without it the import fails outright on an older server:
+
+```python
+from plugins.manager import plugin_data_dir
+
+CACHE_DIR = plugin_data_dir("my-plugin") / "listings"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+```
+
+The directory is yours alone, named after your plugin id, and created on the
+first call. It is removed when the plugin is uninstalled, and at no other time.
+
+**Moving data you already keep beside your code.** When an update replaces the
+old version, anything in the old directory that the new version does not ship
+is moved into this data directory rather than deleted, keeping its name and its
+place. So a plugin whose old release cached into `<plugin>/.cache` finds that
+cache waiting at `plugin_data_dir("my-plugin") / ".cache"` in the release that
+switches over - point the constant at the new path and the existing cache
+carries across untouched.
+
+The comparison goes all the way down, so data you keep inside a directory your
+archive also ships is carried too, while the files you actually ship are
+replaced. Two things are never carried: `vendor/`, which the installer builds
+from your `requirements.txt` and owns, and bytecode caches, which are rebuilt
+anyway.
+
+That rescue keeps the bytes safe for a plugin that has not switched over, and
+it keeps doing it on every update rather than only the first. But the plugin
+will not find them on its own: it still looks beside its code, where they no
+longer are. Switching over is what makes the data usable again.
+
+Settings, as opposed to data, stay in the database and are read the same way as
+always:
+
+```python
+from plugins.manager import get_plugin_config
+
+api_key = get_plugin_config("my-plugin").get("api_key", "")
+```
+
+Read them through that helper and nothing else. Since GamesDownloader
+**1.0.32**, every field your `config_schema` types as `password` is stored
+encrypted, and `get_plugin_config` is what decrypts it: a query of your own
+against `plugin_configs` hands back the ciphertext, which your API answers with
+a 401 on every request. The helper also shares one pooled connection instead of
+opening an engine per call.
