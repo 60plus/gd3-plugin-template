@@ -163,6 +163,24 @@ The same applies to `label` and `hint` fields - they can be i18n keys from your 
 
 Skins are rendered as colored circles in Settings > Appearance. The selected skin sets `data-skin` attribute on `<html>`, and your CSS uses `[data-skin="blue"]` to apply colors.
 
+### Vuetify components available to a theme - changed in v1.0.31
+
+The app registers three Vuetify components globally: `VApp`, `VBtn` and
+`VSnackbar`. Before v1.0.31 it registered the entire library, so a theme could
+reach for any `<v-*>` tag and find it.
+
+Nothing shipped was using one - neither Neon Horizon nor Vapor contains a
+single `<v-*>` tag, and the app itself uses only those three - but if your
+theme renders, say, `<v-data-table>`, it will no longer resolve.
+
+Vuetify's directives (`v-ripple` and friends) are still registered and are
+unaffected. The stylesheet is unchanged, so `.v-application` and the rest of
+the Vuetify class names still exist.
+
+If you need another component, import and register it in your own theme rather
+than expecting the host to provide it. That is the more robust arrangement in
+any case: it keeps your theme working regardless of what the host registers.
+
 ### data-theme and data-skin attributes
 
 When a theme is activated, the app sets two attributes on the `<html>` element:
@@ -919,6 +937,32 @@ const ok = await ui.confirm('Delete this?', { title: 'Delete', danger: true,
                                               confirmText: 'Delete', cancelText: 'Cancel' });
 await ui.alert('Done!', { title: 'Info' });
 ```
+
+`requireTick: true` (v1.0.32) keeps the confirm button disabled until the reader
+ticks a checkbox, and focus lands on the tick rather than the button:
+
+```javascript
+const ok = await ui.confirm(body, { title: 'Delete', danger: true,
+                                    requireTick: true });
+```
+
+The label is one of the core's own translations, so a plugin asking this way has
+nothing to add to its own locale files. Two rules keep it worth something.
+
+Use it where an answer destroys something nothing can fetch again - files on
+disk, a save, a library entry - and put it on the **first** question of a flow
+if that question is the one that acts. A flow that asks "delete this?" and then
+"and the files too?" has already deleted the entry by the time the second
+question appears, so the tick belongs on the first.
+
+Do not use it on reversible actions. A tick in front of something harmless
+teaches people to tick without reading, and then they tick without reading on
+the question that mattered.
+
+On cores older than 1.0.32 the option is ignored: the dialog opens as an
+ordinary confirm, which is the pre-1.0.32 behaviour and safe to ship. Set
+`min_gd_version` to `1.0.32` only if your plugin depends on the guard actually
+being there.
 
 `ui.openAbout()` (v1.0.15) opens the shared About dialog (logo, running GD
 version, Discord invite) - add an "About" entry to your theme's user menu and
