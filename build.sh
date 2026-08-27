@@ -29,8 +29,15 @@ echo "Building $OUTFILE from $DIR ..."
 
 # Zip the plugin's CONTENTS at the archive root (so plugin.json is NOT nested
 # under a wrapping folder), with forward-slash paths and no Python caches.
+#
+# Both .git patterns are needed and neither covers the other. Paths go in
+# without a leading ./, so `*/.git/*` matches sub/.git/config and leaves
+# .git/config at the root of the archive - and when the plugin directory is
+# itself a repository, that file is where a push token lives. Checked by
+# building an archive both ways, not by reading the manual.
 rm -f "$OUT_ABS"
-( cd "$DIR" && zip -rq "$OUT_ABS" . -x "*__pycache__*" "*.pyc" "*.DS_Store" "*/.git/*" )
+( cd "$DIR" && zip -rq "$OUT_ABS" . \
+    -x "*__pycache__*" "*.pyc" "*.DS_Store" ".git/*" "*/.git/*" )
 
 echo "Created: $OUTFILE"
 echo
