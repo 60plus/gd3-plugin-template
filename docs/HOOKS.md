@@ -792,6 +792,27 @@ await __GD__.romSources.download(src.id, [page.items[0].id])
 | `route(sourceId, fsSlug?)` | `string` | Canonical in-app route, so the URL layout stays the core's |
 | `platformArt(fsSlug)` | `{icon, name, fanart}` | The same console art the Retro grid uses |
 | `__GD__.roms.import(url, fsSlug, filename)` | `object` | General primitive: pull one ROM by URL, no adapter needed |
+| `__GD__.roms.convertToChd(romId, deleteSource?)` (v1.0.33) | job record | Convert a title's discs to CHD, the whole set as one job. Returns at once; watch `chd:convert` |
+| `__GD__.roms.listChdJobs()` (v1.0.33) | `object[]` | Conversions the server still knows about, so a reloaded page finds them again |
+| `__GD__.roms.cancelChdJob(jobId)` (v1.0.33) | `void` | Stop a running conversion, or drop a finished one from the list |
+
+**Converting discs to CHD.** `convertToChd` takes a ROM id and converts every
+disc of that title, one job for the set, one job at a time on the server. The
+call returns as soon as the work is queued, so a theme showing progress reads
+it from the `chd:convert` event rather than from the return value.
+
+`deleteSource` is a person's decision and belongs in your UI, not in a default:
+ask before starting, because it is answered before any work happens. `false`
+keeps the original discs, moved one directory down into `_originals` so the
+next scan does not file them as a second copy of the same game. Either way the
+originals only go after each result has been verified against them.
+
+Offer the control only where it will work. A ROM payload carries
+`chd_convertible`, which is true for a `.cue`, `.gdi`, `.toc`, `.iso` or `.img`,
+including one inside a `.zip`, and false for a title that is already CHD. The
+library row survives the conversion, so save states, battery saves, play
+history and artwork stay attached and your view does not need to re-resolve the
+game afterwards.
 
 A `RomSource` carries `id`, `name`, `plugin_id`, `plugin_name`, `icon`,
 `tile_bg`, `requires_auth` and `configured`. Head the view with `plugin_name`
@@ -1205,6 +1226,27 @@ const off = window.__GD__.events.on('upload:url_progress', (data) => { ... });
 | `torrent:download_progress` / `_complete` / `_error` | torrent-based game downloads |
 | `upload:url_progress` / `_complete` / `_error` | server-side URL uploads |
 | `download:packaging` (v1.0.24) | file-packaging jobs from `__GD__.library.package()` - `{ id, status, done, total }` |
+| `chd:convert` (v1.0.33) | disc conversions from `__GD__.roms.convertToChd()` - see the payload below |
+
+`chd:convert` carries the whole job in one payload, the same way
+`download:packaging` does, because it is the same kind of thing: long local
+work with a progress bar rather than a transfer.
+
+```javascript
+{
+  id: "chd-3",        // stable string id, handy as a list key
+  job_id: 3,
+  rom_id: 412,
+  title: "Final Fantasy IX",
+  status: "converting",  // queued | converting | completed | failed | cancelled
+  percent: 47.5,      // across the whole set, not the current disc
+  done_discs: 1,
+  total_discs: 4,
+  saved_bytes: 158334976,
+  delete_source: false,
+  error: null,
+}
+```
 
 ### Emulation data for theme pages - v1.0.15
 
